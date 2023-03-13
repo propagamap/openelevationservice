@@ -104,12 +104,12 @@ def polygon_elevation(geometry, format_out, dataset):
         if format_out == 'geojson':
             # Return GeoJSON directly in PostGIS
             query_final = db.session \
-                              .query(func.ST_AsGeoJson(func.ST_MakeLine(query_points3d.c.geom)))
+                              .query(func.ST_AsGeoJson(func.ST_Collect(query_points3d.c.geom)))
             
         else:
             # Else return the WKT of the geometry
             query_final = db.session \
-                              .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom)))
+                              .query(func.ST_AsText(func.ST_Collect(query_points3d.c.geom)))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
 
