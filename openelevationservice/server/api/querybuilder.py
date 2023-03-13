@@ -109,7 +109,7 @@ def polygon_elevation(geometry, format_out, dataset):
         else:
             # Else return the WKT of the geometry
             query_final = db.session \
-                              .query(func.ST_AsText(func.ST_Collect(query_points3d.c.geom)))
+                              .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom)))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
 
