@@ -80,7 +80,7 @@ def polygon_elevation(geometry, format_out, dataset):
         result_pixels = db.session \
                             .query(func.DISTINCT(func.ST_PixelAsPoints(
                                 func.ST_Clip(Model.rast, 1, query_geom.c.geom, coord_precision), #.geom
-                                1))) \
+                                1, False))) \
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
