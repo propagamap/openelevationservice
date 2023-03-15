@@ -8,13 +8,12 @@ from openelevationservice.server.api.api_exceptions import InvalidUsage
 
 from geoalchemy2.functions import ST_Value, ST_Intersects, ST_X, ST_Y # ST_DumpPoints, ST_Dump, 
 from sqlalchemy import func, literal_column
+from sqlalchemy.dialects.postgresql import array
 import json
 
 log = get_logger(__name__)
 
-coord_precision = SETTINGS['coord_precision']
-coord_precision = float(coord_precision)
-
+coord_precision = float(SETTINGS['coord_precision'])
 division_limit = 1 / float(SETTINGS['maximum_nodes'])
 
 def _getModel(dataset):
@@ -39,10 +38,8 @@ def format_PixelAsPoints(result_pixels):
     heights = []
     for pixel in result_pixels:
         subcolumns = pixel[0].split(",")
-        point = subcolumns[0][1: ]
-        if point not in points:
-            points.append(point)
-            heights.append(int(subcolumns[1]))
+        points.append(subcolumns[0][1: ])
+        heights.append(int(subcolumns[1]))
     
     return func.unnest(literal_column("ARRAY{}".format(points))), \
            func.unnest(literal_column("ARRAY{}".format(heights)))
@@ -76,19 +73,13 @@ def polygon_elevation(geometry, format_out, dataset):
                             .subquery().alias('pGeom')
 
         result_pixels = db.session \
-                            .query(func.ST_PixelAsPoints(
+                            .query(func.DISTINCT(func.ST_PixelAsPoints(
                                 func.ST_Clip(Model.rast, 1, query_geom.c.geom, coord_precision), #.geom
-                                1)) \
+                                1, False))) \
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
-                            .all() #.subquery().alias('getsubrast')
+                            .all()
         
         point_col, height_col = format_PixelAsPoints(result_pixels)
-        
-        #
-        #query_getelev = db.session \
-        #                    .query(query_subrast.c.geom,
-        #                           query_subrast.c.val) \
-        #                    .subquery().alias('getelev')
 
         query_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
@@ -109,13 +100,15 @@ def polygon_elevation(geometry, format_out, dataset):
                               .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom)))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
+    
+    result_geom = query_final.scalar()
 
     # Behaviour when all vertices are out of bounds
-    if query_final[0][0] == None:
+    if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
         
-    return query_final[0][0]
+    return result_geom
 
 
 def line_elevation(geometry, format_out, dataset):
@@ -148,21 +141,20 @@ def line_elevation(geometry, format_out, dataset):
         if int(num_points) != 2:
             raise InvalidUsage(400, 4002, "Actually, only LineString with exactly 2 points are supported!")
         
+        # geometry.bounds = (minX, minY, maxX, maxY)
         lineLen = max(geometry.bounds[2] - geometry.bounds[0], geometry.bounds[3] - geometry.bounds[1])
 
         query_points2d = db.session \
                             .query(func.ST_SetSRID(func.ST_DumpPoints(func.ST_Union(
-                                func.ST_PointN(geometry.wkt, 1),
-                                func.ST_LineInterpolatePoints(
-                                    geometry.wkt,
-                                    max(min(1, coord_precision / lineLen), division_limit)
-                                )
+                                array([
+                                    func.ST_PointN(geometry.wkt, 1),
+                                    func.ST_LineInterpolatePoints(
+                                        geometry.wkt,
+                                        max(min(1, coord_precision / lineLen), division_limit)
+                                    ),
+                                    func.ST_PointN(geometry.wkt, 2)
+                                ])
                             )).geom, 4326).label('geom')).subquery().alias('points2d')
-        
-        #query_points2d = db.session\
-        #                    .query(func.ST_SetSRID(ST_DumpPoints(geometry.wkt, coord_precision).geom, 4326) \
-        #                    .label('geom')) \
-        #                    .subquery().alias('points2d')
 
         query_getelev = db.session \
                             .query(func.DISTINCT(query_points2d.c.geom).label('geom'),
@@ -174,7 +166,7 @@ def line_elevation(geometry, format_out, dataset):
         query_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                      ST_Y(query_getelev.c.geom),
-                                                                     query_getelev.c.z),
+                                                                     func.coalesce(query_getelev.c.z, 0)),
                                               4326).label('geom')) \
                             .order_by(ST_X(query_getelev.c.geom)) \
                             .subquery().alias('points3d')
@@ -191,12 +183,14 @@ def line_elevation(geometry, format_out, dataset):
     else:
         raise InvalidUsage(400, 4002, "Needs to be a LineString, not a {}!".format(geometry.geom_type))
 
+    result_geom = query_final.scalar()
+
     # Behaviour when all vertices are out of bounds
-    if query_final[0][0] == None:
+    if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
         
-    return query_final[0][0]
+    return result_geom
 
 
 def point_elevation(geometry, format_out, dataset):
@@ -229,26 +223,29 @@ def point_elevation(geometry, format_out, dataset):
         query_getelev = db.session \
                             .query(query_point2d.c.geom,
                                    ST_Value(Model.rast, query_point2d.c.geom).label('z')) \
-                            .filter(ST_Intersects(Model.rast, query_point2d.c.geom)) \
+                            .select_from(query_point2d) \
+                            .join(Model, ST_Intersects(Model.rast, query_point2d.c.geom)) \
+                            .limit(1) \
                             .subquery().alias('getelevation')
         
         if format_out == 'geojson': 
             query_final = db.session \
                                 .query(func.ST_AsGeoJSON(func.ST_MakePoint(ST_X(query_getelev.c.geom),
-                                                                                         ST_Y(query_getelev.c.geom),
-                                                                                         query_getelev.c.z)
-                                                                        ))
+                                                                           ST_Y(query_getelev.c.geom),
+                                                                           func.coalesce(query_getelev.c.z, 0)
+                                                                        )))
         else:
             query_final = db.session \
                                 .query(func.ST_AsText(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                         ST_Y(query_getelev.c.geom),
-                                                                        query_getelev.c.z)
-                                                                    ))
+                                                                        func.coalesce(query_getelev.c.z, 0)
+                                                                    )))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Point, not {}!".format(geometry.geom_type))
     
     try:
-        return query_final[0][0]
+        result_geom = query_final.scalar()
+        return result_geom
     except:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
