@@ -13,12 +13,7 @@ import json
 
 log = get_logger(__name__)
 
-coord_precision = SETTINGS['coord_precision']
-if "/" in coord_precision:
-    coord_precision = float(coord_precision.split("/")[0]) / float(coord_precision.split("/")[1])
-else:
-    coord_precision = float(coord_precision)
-
+coord_precision = float(SETTINGS['coord_precision'])
 division_limit = 1 / float(SETTINGS['maximum_nodes'])
 
 def _getModel(dataset):

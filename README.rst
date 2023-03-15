@@ -115,7 +115,7 @@ Create virtual environment
 
 First, customize ``./openelevationservice/server/ops_settings.sample.yml`` and name it ``ops_settings.yml``.
 
-- Set ``coord_precision`` to ``1/1200``.
+- Set ``coord_precision`` to ``0.00083333333333333333``.
 - The part of ``srtm_parameters`` need not be changed.
 - For part of ``provider_parameters``, write the connection properties to the remote database server.
 
@@ -160,7 +160,7 @@ Windows with remote PostGIS set up
 
 Rename ``./openelevationservice/server/ops_settings.sample.yml`` to ``ops_settings.yml``:
 
-- Set ``coord_precision`` to ``1/1200``.
+- Set ``coord_precision`` to ``0.00083333333333333333``.
 - The part of ``srtm_parameters`` need not be changed.
 - For part of ``provider_parameters``, write the connection properties to the remote database server.
 
