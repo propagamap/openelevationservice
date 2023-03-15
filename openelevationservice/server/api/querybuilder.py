@@ -8,6 +8,7 @@ from openelevationservice.server.api.api_exceptions import InvalidUsage
 
 from geoalchemy2.functions import ST_Value, ST_Intersects, ST_X, ST_Y # ST_DumpPoints, ST_Dump, 
 from sqlalchemy import func, literal_column
+from sqlalchemy.dialects.postgresql import array
 import json
 
 log = get_logger(__name__)
@@ -150,11 +151,14 @@ def line_elevation(geometry, format_out, dataset):
 
         query_points2d = db.session \
                             .query(func.ST_SetSRID(func.ST_DumpPoints(func.ST_Union(
-                                func.ST_PointN(geometry.wkt, 1),
-                                func.ST_LineInterpolatePoints(
-                                    geometry.wkt,
-                                    max(min(1, coord_precision / lineLen), division_limit)
-                                )
+                                array([
+                                    func.ST_PointN(geometry.wkt, 1),
+                                    func.ST_LineInterpolatePoints(
+                                        geometry.wkt,
+                                        max(min(1, coord_precision / lineLen), division_limit)
+                                    ),
+                                    func.ST_PointN(geometry.wkt, 2)
+                                ])
                             )).geom, 4326).label('geom')).subquery().alias('points2d')
 
         query_getelev = db.session \
