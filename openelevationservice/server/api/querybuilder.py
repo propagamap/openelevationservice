@@ -171,7 +171,7 @@ def line_elevation(geometry, format_out, dataset):
         query_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                      ST_Y(query_getelev.c.geom),
-                                                                     query_getelev.c.z),
+                                                                     func.coalesce(query_getelev.c.z, 0)),
                                               4326).label('geom')) \
                             .order_by(ST_X(query_getelev.c.geom)) \
                             .subquery().alias('points3d')
@@ -228,21 +228,23 @@ def point_elevation(geometry, format_out, dataset):
         query_getelev = db.session \
                             .query(query_point2d.c.geom,
                                    ST_Value(Model.rast, query_point2d.c.geom).label('z')) \
-                            .filter(ST_Intersects(Model.rast, query_point2d.c.geom)) \
+                            .select_from(query_point2d) \
+                            .join(Model, ST_Intersects(Model.rast, query_point2d.c.geom)) \
+                            .limit(1) \
                             .subquery().alias('getelevation')
         
         if format_out == 'geojson': 
             query_final = db.session \
                                 .query(func.ST_AsGeoJSON(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                            ST_Y(query_getelev.c.geom),
-                                                                           query_getelev.c.z)
-                                                                        ))
+                                                                           func.coalesce(query_getelev.c.z, 0)
+                                                                        )))
         else:
             query_final = db.session \
                                 .query(func.ST_AsText(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                         ST_Y(query_getelev.c.geom),
-                                                                        query_getelev.c.z)
-                                                                    ))
+                                                                        func.coalesce(query_getelev.c.z, 0)
+                                                                    )))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Point, not {}!".format(geometry.geom_type))
     
