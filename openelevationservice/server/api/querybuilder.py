@@ -43,7 +43,8 @@ def format_PixelAsGeoms(result_pixels):
         heights.append(int(subcolumns[1]))
     
     return func.unnest(literal_column("ARRAY{}".format(geoms))), \
-           func.unnest(literal_column("ARRAY{}".format(heights)))
+           func.unnest(literal_column("ARRAY{}".format(heights))), \
+           min(heights), max(heights)
 
 
 def polygon_coloring_elevation(geometry, dataset):
@@ -61,8 +62,10 @@ def polygon_coloring_elevation(geometry, dataset):
     :returns: 3D polygon as GeoJSON or WKT
     :rtype: string
     """
-    
     Model = _getModel(dataset)
+
+    # May be a good idea to make this a parameter from request
+    num_ranges = 23
     
     if geometry.geom_type == 'Polygon':
         query_geom = db.session \
@@ -77,11 +80,13 @@ def polygon_coloring_elevation(geometry, dataset):
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
-        polygon_col, height_col = format_PixelAsGeoms(result_pixels)
+        polygon_col, height_col, min_height, max_height = format_PixelAsGeoms(result_pixels)
+
+        range_div = (max_height - min_height) / num_ranges
 
         column_set = db.session \
                             .query(polygon_col.label("geometry"),
-                                   height_col.label("height")) \
+                                   func.round(height_col / range_div).label("colorRange")) \
                             .subquery().alias('columnSet')
 
         query_features = db.session \
@@ -90,10 +95,10 @@ def polygon_coloring_elevation(geometry, dataset):
                                 'geometry', func.ST_AsGeoJson(func.ST_Union(func.array_agg(
                                     func.ST_ReducePrecision(column_set.c.geometry, 1e-12)))).cast(JSON),
                                 'properties', func.json_build_object(
-                                    'height', column_set.c.height,
+                                    'heightBase', func.round(column_set.c.colorRange * range_div),
                                 )).label('features') \
                             ).select_from(column_set) \
-                            .group_by(column_set.c.height) \
+                            .group_by(column_set.c.colorRange) \
                             .subquery().alias('rfeatures')
 
         # Return GeoJSON directly in PostGIS
@@ -150,7 +155,7 @@ def polygon_elevation(geometry, format_out, dataset):
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
-        point_col, height_col = format_PixelAsGeoms(result_pixels)
+        point_col, height_col, *_= format_PixelAsGeoms(result_pixels)
 
         query_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
