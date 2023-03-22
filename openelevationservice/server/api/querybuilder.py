@@ -92,8 +92,11 @@ def polygon_coloring_elevation(geometry, dataset):
         query_features = db.session \
                             .query(func.jsonb_build_object(
                                 'type', 'Feature',
-                                'geometry', func.ST_AsGeoJson(func.ST_Union(func.array_agg(
-                                    func.ST_ReducePrecision(column_set.c.geometry, 1e-12)))).cast(JSON),
+                                'geometry', func.ST_AsGeoJson(
+                                    func.ST_SimplifyPreserveTopology(func.ST_Union(func.array_agg(
+                                        func.ST_ReducePrecision(column_set.c.geometry, 1e-12)
+                                    )), 1e-12)
+                                ).cast(JSON),
                                 'properties', func.json_build_object(
                                     'heightBase', func.round(column_set.c.colorRange * range_div),
                                 )).label('features') \
