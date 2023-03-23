@@ -117,7 +117,9 @@ First, customize ``./openelevationservice/server/ops_settings.sample.yml`` and n
 
 - Set ``coord_precision`` to ``0.00083333333333333333``.
 - The part of ``srtm_parameters`` need not be changed.
-- For part of ``provider_parameters``, write the connection properties to the remote database server.
+- For part of ``provider_parameters``, do one of the following:
+    - Write the connection properties in the file to the remote database server.
+    - Set the property as environment variables, turning to upper case and adding the prefix ``OES_`` to the variable name, e.g. ``db_name`` to ``OES_DB_NAME``.
 
 Then you can set up the environment:
 
@@ -162,7 +164,9 @@ Rename ``./openelevationservice/server/ops_settings.sample.yml`` to ``ops_settin
 
 - Set ``coord_precision`` to ``0.00083333333333333333``.
 - The part of ``srtm_parameters`` need not be changed.
-- For part of ``provider_parameters``, write the connection properties to the remote database server.
+- For part of ``provider_parameters``, do one of the following for each connection properties to the remote database server:
+    - Write the property in the file.
+    - Set the property as environment variables, turning to upper case and adding the prefix ``OES_`` to the variable name, e.g. ``db_name`` to ``OES_DB_NAME``.
 
 Steps to establish the environment and run the server:
 

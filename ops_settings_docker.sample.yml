@@ -1,6 +1,6 @@
 ---
-attribution: "service by https://openrouteservice.org | data by http://srtm.csi.cgiar.org"
-coord_precision: 1e-6
+attribution: "internal service of propamap | data by http://srtm.csi.cgiar.org"
+coord_precision: 0.00083333333333333333
 maximum_nodes: 2000
 srtm_parameters:
   user: 
