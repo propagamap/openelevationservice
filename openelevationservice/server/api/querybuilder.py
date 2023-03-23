@@ -84,7 +84,7 @@ def polygon_coloring_elevation(geometry, dataset):
 
         column_set = db.session \
                             .query(polygon_col.label("geometry"),
-                                   func.LEAST(func.ceil(height_col / range_div), num_ranges).label("colorRange")) \
+                                   func.LEAST(func.floor(height_col / range_div), num_ranges).label("colorRange")) \
                             .subquery().alias('columnSet')
 
         query_features = db.session \
