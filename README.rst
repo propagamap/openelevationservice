@@ -204,7 +204,7 @@ The openelevationservice exposes 2 endpoints:
 |                       |                   +------------+---------+---------------------------------------------------------+
 |                       |                   | geometry   |    --   | depends on ``format_in``                                |
 |                       |                   +------------+---------+---------------------------------------------------------+
-|                       |                   | format_out | geojson | geojson, polygon                                        |
+|                       |                   | format_out | geojson | geojson, polygon, colorpolygon                          |
 |                       |                   +------------+---------+---------------------------------------------------------+
 |                       |                   | dataset    | srtm    | srtm (so far)                                           |
 +-----------------------+-------------------+------------+---------+---------------------------------------------------------+
@@ -332,3 +332,7 @@ POST Polygon
         [75, 29]
       ]
     }'
+
+With the "format_out" as "geojson" or "polygon", the result will be simple multipoints with the elevation values as 3rd dimension in the coordinates.
+
+With the "format_out" as "colorpolygon", the result will be a feature collection with the elevation values assigned as properties to geometries of polygon or multipolygon.
