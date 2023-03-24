@@ -7,10 +7,9 @@ from openelevationservice.server.db_import.models import db, Cgiar
 from openelevationservice.server.api.api_exceptions import InvalidUsage
 
 from geoalchemy2.functions import ST_Value, ST_Intersects, ST_X, ST_Y # ST_DumpPoints, ST_Dump, 
-from sqlalchemy import func, cast, literal_column
+from sqlalchemy import func, literal_column
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
-# import json
 
 log = get_logger(__name__)
 
