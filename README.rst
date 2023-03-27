@@ -292,12 +292,9 @@ POST point as GeoJSON
   curl -XPOST http://localhost:5000/elevation/point \
     -H 'Content-Type: application/json' \
     -d '{
-      "format_in": "geojson",
-      "format_out": "geojson",
-      "geometry": {
-        "coordinates": [13.349762, 38.11295],
-        "type": "Point"
-      }
+      "format_in": "point",
+      "format_out": "point",
+      "geometry": [13.349762, 38.11295]
     }'
 
 POST LineString as polyline
@@ -309,9 +306,11 @@ POST LineString as polyline
     -H 'Content-Type: application/json' \
     -d '{
       "format_in": "polyline",
-      "format_out": "encodedpolyline",
-      "geometry": [[13.349762, 38.11295],
-                   [12.638397, 37.645772]]
+      "format_out": "polyline",
+      "geometry": [
+        [13.349762, 38.11295],
+        [12.638397, 37.645772]
+      ]
     }'
 
 POST Polygon
@@ -323,7 +322,7 @@ POST Polygon
     -H 'Content-Type: application/json' \
     -d '{
       "format_in": "polygon",
-      "format_out": "polygon",
+      "format_out": "colorpolygon",
       "geometry": [
         [75, 29], 
         [75.003, 29],
