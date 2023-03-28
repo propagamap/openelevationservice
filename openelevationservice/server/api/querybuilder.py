@@ -8,8 +8,8 @@ from openelevationservice.server.api.api_exceptions import InvalidUsage
 
 from geoalchemy2.functions import ST_Value, ST_Intersects, ST_X, ST_Y # ST_DumpPoints, ST_Dump, 
 from sqlalchemy import func, literal_column
+from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
-import json
 
 log = get_logger(__name__)
 
@@ -32,17 +32,93 @@ def _getModel(dataset):
     return model
 
 
-def format_PixelAsPoints(result_pixels):
+def format_PixelAsGeoms(result_pixels):
     # format: [ ('(0101000020E61000000000000000C05240D169039D36003D40,202,1,2)',) , ...
-    points = []
+    geoms = []
     heights = []
     for pixel in result_pixels:
         subcolumns = pixel[0].split(",")
-        points.append(subcolumns[0][1: ])
+        geoms.append(subcolumns[0][1: ])
         heights.append(int(subcolumns[1]))
     
-    return func.unnest(literal_column("ARRAY{}".format(points))), \
+    return func.unnest(literal_column("ARRAY{}".format(geoms))), \
            func.unnest(literal_column("ARRAY{}".format(heights)))
+
+
+def polygon_coloring_elevation(geometry, dataset):
+    """
+    Performs PostGIS query to enrich a polygon geometry.
+    
+    :param geometry: Input 2D polygon to be enriched with elevation
+    :type geometry: Shapely geometry
+    
+    :param dataset: Elevation dataset to use for querying
+    :type dataset: string
+    
+    :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
+        
+    :returns: 3D polygon as GeoJSON or WKT
+    :rtype: string
+    """
+    Model = _getModel(dataset)
+
+    # May be a good idea to make this a parameter from request
+    num_ranges = 23
+    range_div = 43
+    
+    if geometry.geom_type == 'Polygon':
+        query_geom = db.session \
+                            .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
+                            .label('geom')) \
+                            .subquery().alias('pGeom')
+
+        result_pixels = db.session \
+                            .query(func.DISTINCT(func.ST_PixelAsPolygons(
+                                func.ST_Clip(Model.rast, query_geom.c.geom, 0), #.geom
+                                1, False))) \
+                            .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
+                            .all()
+        
+        polygon_col, height_col = format_PixelAsGeoms(result_pixels)
+
+        column_set = db.session \
+                            .query(polygon_col.label("geometry"),
+                                   func.LEAST(func.floor(height_col / range_div), num_ranges).label("colorRange")) \
+                            .subquery().alias('columnSet')
+
+        query_features = db.session \
+                            .query(func.jsonb_build_object(
+                                'type', 'Feature',
+                                'geometry', func.ST_AsGeoJson(
+                                    func.ST_SimplifyPreserveTopology(func.ST_Union(func.array_agg(
+                                        func.ST_ReducePrecision(column_set.c.geometry, 1e-12)
+                                    )), 1e-12)
+                                ).cast(JSON),
+                                'properties', func.json_build_object(
+                                    'heightBase', column_set.c.colorRange * range_div,
+                                )).label('features') \
+                            ).select_from(column_set) \
+                            .group_by(column_set.c.colorRange) \
+                            .subquery().alias('rfeatures')
+
+        # Return GeoJSON directly in PostGIS
+        query_final = db.session \
+                            .query(func.jsonb_build_object(
+                                'type', 'FeatureCollection',
+                                'features', func.jsonb_agg(query_features.c.features))) \
+                            .select_from(query_features)
+
+    else:
+        raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
+    
+    result_geom = query_final.scalar()
+
+    # Behaviour when all vertices are out of bounds
+    if result_geom == None:
+        raise InvalidUsage(404, 4002,
+                           'The requested geometry is outside the bounds of {}'.format(dataset))
+    
+    return result_geom
 
 
 def polygon_elevation(geometry, format_out, dataset):
@@ -74,12 +150,12 @@ def polygon_elevation(geometry, format_out, dataset):
 
         result_pixels = db.session \
                             .query(func.DISTINCT(func.ST_PixelAsPoints(
-                                func.ST_Clip(Model.rast, 1, query_geom.c.geom, coord_precision), #.geom
+                                func.ST_Clip(Model.rast, query_geom.c.geom, 0), #.geom
                                 1, False))) \
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
-        point_col, height_col = format_PixelAsPoints(result_pixels)
+        point_col, height_col = format_PixelAsGeoms(result_pixels)
 
         query_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
@@ -243,9 +319,10 @@ def point_elevation(geometry, format_out, dataset):
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Point, not {}!".format(geometry.geom_type))
     
-    try:
-        result_geom = query_final.scalar()
-        return result_geom
-    except:
+    result_geom = query_final.scalar()
+
+    if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
+        
+    return result_geom

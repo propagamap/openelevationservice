@@ -117,7 +117,9 @@ First, customize ``./openelevationservice/server/ops_settings.sample.yml`` and n
 
 - Set ``coord_precision`` to ``0.00083333333333333333``.
 - The part of ``srtm_parameters`` need not be changed.
-- For part of ``provider_parameters``, write the connection properties to the remote database server.
+- For part of ``provider_parameters``, do one of the following for each connection property to the remote database server:
+    - Write the connection properties in the file to the remote database server.
+    - Set the property as environment variables, turning to upper case and adding the prefix ``OES_`` to the variable name, e.g. ``db_name`` to ``OES_DB_NAME``.
 
 Then you can set up the environment:
 
@@ -162,7 +164,9 @@ Rename ``./openelevationservice/server/ops_settings.sample.yml`` to ``ops_settin
 
 - Set ``coord_precision`` to ``0.00083333333333333333``.
 - The part of ``srtm_parameters`` need not be changed.
-- For part of ``provider_parameters``, write the connection properties to the remote database server.
+- For part of ``provider_parameters``, do one of the following for each connection property to the remote database server:
+    - Write the property in the file.
+    - Set the property as environment variables, turning to upper case and adding the prefix ``OES_`` to the variable name, e.g. ``db_name`` to ``OES_DB_NAME``.
 
 Steps to establish the environment and run the server:
 
@@ -200,7 +204,7 @@ The openelevationservice exposes 2 endpoints:
 |                       |                   +------------+---------+---------------------------------------------------------+
 |                       |                   | geometry   |    --   | depends on ``format_in``                                |
 |                       |                   +------------+---------+---------------------------------------------------------+
-|                       |                   | format_out | geojson | geojson, polygon                                        |
+|                       |                   | format_out | geojson | geojson, polygon, colorpolygon                          |
 |                       |                   +------------+---------+---------------------------------------------------------+
 |                       |                   | dataset    | srtm    | srtm (so far)                                           |
 +-----------------------+-------------------+------------+---------+---------------------------------------------------------+
@@ -288,12 +292,9 @@ POST point as GeoJSON
   curl -XPOST http://localhost:5000/elevation/point \
     -H 'Content-Type: application/json' \
     -d '{
-      "format_in": "geojson",
-      "format_out": "geojson",
-      "geometry": {
-        "coordinates": [13.349762, 38.11295],
-        "type": "Point"
-      }
+      "format_in": "point",
+      "format_out": "point",
+      "geometry": [13.349762, 38.11295]
     }'
 
 POST LineString as polyline
@@ -305,9 +306,11 @@ POST LineString as polyline
     -H 'Content-Type: application/json' \
     -d '{
       "format_in": "polyline",
-      "format_out": "encodedpolyline",
-      "geometry": [[13.349762, 38.11295],
-                   [12.638397, 37.645772]]
+      "format_out": "polyline",
+      "geometry": [
+        [13.349762, 38.11295],
+        [12.638397, 37.645772]
+      ]
     }'
 
 POST Polygon
@@ -319,7 +322,7 @@ POST Polygon
     -H 'Content-Type: application/json' \
     -d '{
       "format_in": "polygon",
-      "format_out": "polygon",
+      "format_out": "colorpolygon",
       "geometry": [
         [75, 29], 
         [75.003, 29],
@@ -328,3 +331,7 @@ POST Polygon
         [75, 29]
       ]
     }'
+
+With the "format_out" as "geojson" or "polygon", the result will be simple multipoints with the elevation values as 3rd dimension in the coordinates.
+
+With the "format_out" as "colorpolygon", the result will be a feature collection with the elevation values assigned as properties to geometries of polygon or multipolygon.

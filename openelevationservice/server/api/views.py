@@ -34,22 +34,22 @@ def elevationpolygon():
         raise api_exceptions.InvalidUsage(400,
                                           4000,
                                           f'Invalid format_in value "{format_in}"')
-        
-    #if len(list(geom.coords)) > SETTINGS['maximum_nodes']:
-    #    raise api_exceptions.InvalidUsage(status_code=400,
-    #                                      error_code=4003,
-    #                                      message='Maximum number of nodes exceeded.')
                 
     results = ResponseBuilder().__dict__
-    geom_queried = querybuilder.polygon_elevation(geom, format_out, dataset)
+    if format_out == 'colorpolygon':
+        geom_queried = querybuilder.polygon_coloring_elevation(geom, dataset)
+    else:
+        geom_queried = querybuilder.polygon_elevation(geom, format_out, dataset)
     
     # decision tree for format_out
-    if format_out != 'geojson':
+    if format_out == 'polygon':
         geom_out = wkt.loads(geom_queried)
         coords = geom_out.coords
         results['geometry'] = list(coords)
     elif format_out == 'geojson':
         results['geometry'] = json.loads(geom_queried)
+    elif format_out == 'colorpolygon':
+        results['geometry'] = geom_queried
     else:
         raise api_exceptions.InvalidUsage(400,
                                           4000,

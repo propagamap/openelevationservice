@@ -18,6 +18,8 @@ RUN /oes_venv/bin/pip3 install -r /deploy/app/requirements.txt
 
 FROM ubuntu:18.04
 
+LABEL org.opencontainers.image.source=https://github.com/propagamap/openelevationservice
+
 COPY --from=builder /deploy /deploy
 COPY --from=builder /oes_venv /oes_venv
 
