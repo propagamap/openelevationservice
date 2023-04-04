@@ -42,7 +42,8 @@ def format_PixelAsGeoms(result_pixels):
         heights.append(int(subcolumns[1]))
     
     return func.unnest(literal_column("ARRAY{}".format(geoms))), \
-           func.unnest(literal_column("ARRAY{}".format(heights)))
+           func.unnest(literal_column("ARRAY{}".format(heights))), \
+           min(heights), max(heights)
 
 
 def polygon_coloring_elevation(geometry, dataset):
@@ -79,7 +80,7 @@ def polygon_coloring_elevation(geometry, dataset):
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
-        polygon_col, height_col = format_PixelAsGeoms(result_pixels)
+        polygon_col, height_col, min_height, max_height = format_PixelAsGeoms(result_pixels)
 
         column_set = db.session \
                             .query(polygon_col.label("geometry"),
@@ -118,7 +119,7 @@ def polygon_coloring_elevation(geometry, dataset):
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
     
-    return result_geom
+    return result_geom, [min_height, max_height]
 
 
 def polygon_elevation(geometry, format_out, dataset):
@@ -155,7 +156,7 @@ def polygon_elevation(geometry, format_out, dataset):
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
-        point_col, height_col = format_PixelAsGeoms(result_pixels)
+        point_col, height_col, *_ = format_PixelAsGeoms(result_pixels)
 
         query_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
