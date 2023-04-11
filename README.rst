@@ -284,7 +284,7 @@ GET point
 
   curl -XGET https://localhost:5000/elevation/point?geometry=13.349762,38.11295
 
-POST point as GeoJSON
+POST point as geometry
 #########################################################
 
 .. code-block:: bash
@@ -297,7 +297,7 @@ POST point as GeoJSON
       "geometry": [13.349762, 38.11295]
     }'
 
-POST LineString as polyline
+POST LineString as polyline (geometry)
 #########################################################
 
 .. code-block:: bash
@@ -313,7 +313,7 @@ POST LineString as polyline
       ]
     }'
 
-POST Polygon
+POST Polygon as geometry
 #########################################################
 
 .. code-block:: bash
@@ -334,4 +334,7 @@ POST Polygon
 
 With the "format_out" as "geojson" or "polygon", the result will be simple multipoints with the elevation values as 3rd dimension in the coordinates.
 
-With the "format_out" as "colorpolygon", the result will be a feature collection with the elevation values assigned as properties to geometries of polygon or multipolygon.
+With the "format_out" as "colorpolygon", the result will be a feature collection (GeoJSON) with the grouped elevation values assigned as properties to geometries of polygon or multipolygon.
+
+- 23 base ranges of 43 meters (0-42, 43-85, 86-128, ..., 946-988)
+- All values greater than 988 as the last range.
