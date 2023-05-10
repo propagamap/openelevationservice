@@ -221,16 +221,19 @@ def line_elevation(geometry, format_out, dataset):
         # geometry.bounds = (minX, minY, maxX, maxY)
         lineLen = max(geometry.bounds[2] - geometry.bounds[0], geometry.bounds[3] - geometry.bounds[1])
 
+        points_clause = [
+            func.ST_PointN(geometry.wkt, 1),
+            func.ST_PointN(geometry.wkt, 2)
+        ]
+        if lineLen != 0:
+            points_clause.insert(1, func.ST_LineInterpolatePoints(
+                geometry.wkt,
+                max(min(1, coord_precision / lineLen), division_limit)
+            ))
+
         query_points2d = db.session \
                             .query(func.ST_SetSRID(func.ST_DumpPoints(func.ST_Union(
-                                array([
-                                    func.ST_PointN(geometry.wkt, 1),
-                                    func.ST_LineInterpolatePoints(
-                                        geometry.wkt,
-                                        max(min(1, coord_precision / lineLen), division_limit)
-                                    ),
-                                    func.ST_PointN(geometry.wkt, 2)
-                                ])
+                                array(points_clause)
                             )).geom, 4326).label('geom')).subquery().alias('points2d')
 
         query_getelev = db.session \
