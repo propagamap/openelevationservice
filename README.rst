@@ -175,7 +175,7 @@ Steps to establish the environment and run the server:
    # Python virtual environment setup and activate
    python -m venv .venv
    cd .\.venv\Scripts
-   activate
+   .\activate
    cd ..\..
  
    # Install required packages
