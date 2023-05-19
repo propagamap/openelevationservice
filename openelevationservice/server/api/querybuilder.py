@@ -99,6 +99,7 @@ def polygon_coloring_elevation(geometry, dataset):
                                     'heightBase', column_set.c.colorRange * range_div,
                                 )).label('features') \
                             ).select_from(column_set) \
+                            .join(query_geom, func.ST_Within(func.ST_Centroid(column_set.c.geometry), query_geom.c.geom)) \
                             .group_by(column_set.c.colorRange) \
                             .subquery().alias('rfeatures')
 
