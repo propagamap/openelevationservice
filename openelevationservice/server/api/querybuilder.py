@@ -150,7 +150,7 @@ def polygon_elevation(geometry, format_out, dataset):
                             .subquery().alias('pGeom')
 
         result_pixels = db.session \
-                            .query(func.DISTINCT(func.ST_PixelAsPoints(
+                            .query(func.DISTINCT(func.ST_PixelAsCentroids(
                                 func.ST_Clip(Model.rast, query_geom.c.geom, 0), #.geom
                                 1, False))) \
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
@@ -158,12 +158,18 @@ def polygon_elevation(geometry, format_out, dataset):
         
         point_col, height_col, *_ = format_PixelAsGeoms(result_pixels)
 
-        query_points3d = db.session \
+        raster_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
                                                                      ST_Y(point_col),
                                                                      height_col),
                                               4326).label('geom')) \
                             .order_by(ST_X(point_col), ST_Y(point_col)) \
+                            .subquery().alias('raster3d')
+
+        query_points3d = db.session \
+                            .query(raster_points3d.c.geom) \
+                            .select_from(raster_points3d) \
+                            .join(query_geom, func.ST_Within(raster_points3d.c.geom, query_geom.c.geom)) \
                             .subquery().alias('points3d')
 
         if format_out == 'geojson':
