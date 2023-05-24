@@ -175,7 +175,7 @@ Steps to establish the environment and run the server:
    # Python virtual environment setup and activate
    python -m venv .venv
    cd .\.venv\Scripts
-   activate
+   .\activate
    cd ..\..
  
    # Install required packages
@@ -260,7 +260,7 @@ CLI
 The flask command line interface has a few additional commands:
 
 -  ``flask create``: creates a table for CGIAR data
-- ```flask download --xyrange=0,73,0,25``: downloads CGIAR data and limits the X, Y indices optionally with ``xyrange``
+- ``flask download --xyrange=0,73,0,25``: downloads CGIAR data and limits the X, Y indices optionally with ``xyrange``
 - ``flask importdata``: imports CGIAR tiles it finds in ``./tiles/``
 - ``flask drop``: drops CGIAR table
 

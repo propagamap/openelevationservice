@@ -101,7 +101,12 @@ def elevationline():
     
     # decision tree for format_out
     if format_out != 'geojson':
-        geom_out = wkt.loads(geom_queried)
+        if ',' in geom_queried:
+            geom_out = wkt.loads(geom_queried)
+        else: 
+            # When the output is a single point, 'LINESTRING Z' can not be parsed with a array of length 1
+            geom_out = wkt.loads(geom_queried.replace('LINESTRING Z', 'POINT'))
+        
         coords = geom_out.coords
         if format_out in ['encodedpolyline', 'encodedpolyline5']:
             results['geometry'] = codec.encode(coords, precision=5, is3d=True)

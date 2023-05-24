@@ -99,6 +99,7 @@ def polygon_coloring_elevation(geometry, dataset):
                                     'heightBase', column_set.c.colorRange * range_div,
                                 )).label('features') \
                             ).select_from(column_set) \
+                            .join(query_geom, func.ST_Within(func.ST_Centroid(column_set.c.geometry), query_geom.c.geom)) \
                             .group_by(column_set.c.colorRange) \
                             .subquery().alias('rfeatures')
 
@@ -150,7 +151,7 @@ def polygon_elevation(geometry, format_out, dataset):
                             .subquery().alias('pGeom')
 
         result_pixels = db.session \
-                            .query(func.DISTINCT(func.ST_PixelAsPoints(
+                            .query(func.DISTINCT(func.ST_PixelAsCentroids(
                                 func.ST_Clip(Model.rast, query_geom.c.geom, 0), #.geom
                                 1, False))) \
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
@@ -158,12 +159,18 @@ def polygon_elevation(geometry, format_out, dataset):
         
         point_col, height_col, *_ = format_PixelAsGeoms(result_pixels)
 
-        query_points3d = db.session \
+        raster_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
                                                                      ST_Y(point_col),
                                                                      height_col),
                                               4326).label('geom')) \
                             .order_by(ST_X(point_col), ST_Y(point_col)) \
+                            .subquery().alias('raster3d')
+
+        query_points3d = db.session \
+                            .query(raster_points3d.c.geom) \
+                            .select_from(raster_points3d) \
+                            .join(query_geom, func.ST_Within(raster_points3d.c.geom, query_geom.c.geom)) \
                             .subquery().alias('points3d')
 
         if format_out == 'geojson':
@@ -221,16 +228,19 @@ def line_elevation(geometry, format_out, dataset):
         # geometry.bounds = (minX, minY, maxX, maxY)
         lineLen = max(geometry.bounds[2] - geometry.bounds[0], geometry.bounds[3] - geometry.bounds[1])
 
+        points_clause = [
+            func.ST_PointN(geometry.wkt, 1),
+            func.ST_PointN(geometry.wkt, 2)
+        ]
+        if lineLen != 0:
+            points_clause.insert(1, func.ST_LineInterpolatePoints(
+                geometry.wkt,
+                max(min(1, coord_precision / lineLen), division_limit)
+            ))
+
         query_points2d = db.session \
                             .query(func.ST_SetSRID(func.ST_DumpPoints(func.ST_Union(
-                                array([
-                                    func.ST_PointN(geometry.wkt, 1),
-                                    func.ST_LineInterpolatePoints(
-                                        geometry.wkt,
-                                        max(min(1, coord_precision / lineLen), division_limit)
-                                    ),
-                                    func.ST_PointN(geometry.wkt, 2)
-                                ])
+                                array(points_clause)
                             )).geom, 4326).label('geom')).subquery().alias('points2d')
 
         query_getelev = db.session \
