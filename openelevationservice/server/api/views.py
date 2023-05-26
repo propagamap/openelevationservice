@@ -58,6 +58,15 @@ def elevationpolygon():
     
     return jsonify(results)
 
+
+def zero_len_line_format(geom_queried):
+    if ',' in geom_queried:
+        return geom_queried
+    else: 
+        # When the output is a single point, 'LINESTRING Z' can not be parsed with a array of length 1
+        return geom_queried.replace('LINESTRING Z', 'POINT')
+
+
 @main_blueprint.route('/elevation/line', methods=['POST'])
 def elevationline():
     """
@@ -101,11 +110,7 @@ def elevationline():
     
     # decision tree for format_out
     if format_out != 'geojson':
-        if ',' in geom_queried:
-            geom_out = wkt.loads(geom_queried)
-        else: 
-            # When the output is a single point, 'LINESTRING Z' can not be parsed with a array of length 1
-            geom_out = wkt.loads(geom_queried.replace('LINESTRING Z', 'POINT'))
+        geom_out = wkt.loads(zero_len_line_format(geom_queried))
         
         coords = geom_out.coords
         if format_out in ['encodedpolyline', 'encodedpolyline5']:

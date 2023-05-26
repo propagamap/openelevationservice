@@ -5,12 +5,21 @@ from openelevationservice.server.utils.logger import get_logger
 from openelevationservice.server.config import SETTINGS
 from openelevationservice.server.db_import.models import db
 from openelevationservice.server.db_import import filestreams
+from openelevationservice.server.grpc.grpc_server import grpc_serve
 
 import click
 
 log = get_logger(__name__)
 
 app = create_app()
+
+@app.cli.command()
+def grpc():
+    """Starts the gRPC server"""
+    grpc_url = '127.0.0.1:5005'
+    log.info("gRPC server starting on port {}".format(grpc_url))
+    grpc_serve(app, grpc_url)
+
 
 @app.cli.command()
 @click.option('--xyrange', default='0,73,0,25')

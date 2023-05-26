@@ -58,7 +58,7 @@ def polygon_coloring_elevation(geometry, dataset):
     
     :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
         
-    :returns: 3D polygon as GeoJSON or WKT
+    :returns: 3D polygon as GeoJSON or WKT, range of elevation in the polygon
     :rtype: string
     """
     Model = _getModel(dataset)
