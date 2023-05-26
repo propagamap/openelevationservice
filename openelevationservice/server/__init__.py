@@ -10,6 +10,9 @@ from flasgger import Swagger
 import os
 import time
 
+#from openelevationservice.server.grpc import oes_grpc_server
+#from multiprocessing import Process
+
 log = logger.get_logger(__name__)
 
 def create_app(script_info=None):
@@ -93,5 +96,15 @@ def create_app(script_info=None):
         'app': app,
         'db': db}
     )
+
+    #grpc_url = '127.0.0.1:5005'
+    #with app.app_context():
+    #    oes_grpc_server.serve(grpc_url)
+    #log.info("Started gRPC server on {}".format(grpc_url))
+    #grpc_process = Process(
+    #    target=oes_grpc_server.serve,
+    #    args=(grpc_url,)
+    #)
+    #grpc_process.start()
 
     return app
