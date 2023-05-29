@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from . import openelevation_pb2 as services_dot_propamap_dot_v1_dot_openelevation__pb2
+from openelevationservice.server.grpc import openelevation_pb2 as openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2
 
 
 class OpenElevationStub(object):
@@ -15,24 +15,24 @@ class OpenElevationStub(object):
             channel: A grpc.Channel.
         """
         self.PointElevation = channel.unary_unary(
-                '/services.propamap.v1.OpenElevation/PointElevation',
-                request_serializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.LatLon.SerializeToString,
-                response_deserializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.Elevation.FromString,
+                '/propagamap.OpenElevation/PointElevation',
+                request_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LatLon.SerializeToString,
+                response_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.Elevation.FromString,
                 )
         self.LineElevation = channel.unary_unary(
-                '/services.propamap.v1.OpenElevation/LineElevation',
-                request_serializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.LineRequest.SerializeToString,
-                response_deserializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.LineResponse.FromString,
+                '/propagamap.OpenElevation/LineElevation',
+                request_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LineRequest.SerializeToString,
+                response_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LineResponse.FromString,
                 )
         self.AreaPointsElevation = channel.unary_unary(
-                '/services.propamap.v1.OpenElevation/AreaPointsElevation',
-                request_serializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRequest.SerializeToString,
-                response_deserializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaPointsResponse.FromString,
+                '/propagamap.OpenElevation/AreaPointsElevation',
+                request_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.SerializeToString,
+                response_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.FromString,
                 )
         self.AreaRangesElevation = channel.unary_unary(
-                '/services.propamap.v1.OpenElevation/AreaRangesElevation',
-                request_serializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRequest.SerializeToString,
-                response_deserializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRangesResponse.FromString,
+                '/propagamap.OpenElevation/AreaRangesElevation',
+                request_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.SerializeToString,
+                response_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRangesResponse.FromString,
                 )
 
 
@@ -68,27 +68,27 @@ def add_OpenElevationServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'PointElevation': grpc.unary_unary_rpc_method_handler(
                     servicer.PointElevation,
-                    request_deserializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.LatLon.FromString,
-                    response_serializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.Elevation.SerializeToString,
+                    request_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LatLon.FromString,
+                    response_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.Elevation.SerializeToString,
             ),
             'LineElevation': grpc.unary_unary_rpc_method_handler(
                     servicer.LineElevation,
-                    request_deserializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.LineRequest.FromString,
-                    response_serializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.LineResponse.SerializeToString,
+                    request_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LineRequest.FromString,
+                    response_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LineResponse.SerializeToString,
             ),
             'AreaPointsElevation': grpc.unary_unary_rpc_method_handler(
                     servicer.AreaPointsElevation,
-                    request_deserializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRequest.FromString,
-                    response_serializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaPointsResponse.SerializeToString,
+                    request_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.FromString,
+                    response_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.SerializeToString,
             ),
             'AreaRangesElevation': grpc.unary_unary_rpc_method_handler(
                     servicer.AreaRangesElevation,
-                    request_deserializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRequest.FromString,
-                    response_serializer=services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRangesResponse.SerializeToString,
+                    request_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.FromString,
+                    response_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRangesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'services.propamap.v1.OpenElevation', rpc_method_handlers)
+            'propagamap.OpenElevation', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -107,9 +107,9 @@ class OpenElevation(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/services.propamap.v1.OpenElevation/PointElevation',
-            services_dot_propamap_dot_v1_dot_openelevation__pb2.LatLon.SerializeToString,
-            services_dot_propamap_dot_v1_dot_openelevation__pb2.Elevation.FromString,
+        return grpc.experimental.unary_unary(request, target, '/propagamap.OpenElevation/PointElevation',
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LatLon.SerializeToString,
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.Elevation.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -124,9 +124,9 @@ class OpenElevation(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/services.propamap.v1.OpenElevation/LineElevation',
-            services_dot_propamap_dot_v1_dot_openelevation__pb2.LineRequest.SerializeToString,
-            services_dot_propamap_dot_v1_dot_openelevation__pb2.LineResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/propagamap.OpenElevation/LineElevation',
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LineRequest.SerializeToString,
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.LineResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -141,9 +141,9 @@ class OpenElevation(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/services.propamap.v1.OpenElevation/AreaPointsElevation',
-            services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRequest.SerializeToString,
-            services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaPointsResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/propagamap.OpenElevation/AreaPointsElevation',
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.SerializeToString,
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -158,8 +158,8 @@ class OpenElevation(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/services.propamap.v1.OpenElevation/AreaRangesElevation',
-            services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRequest.SerializeToString,
-            services_dot_propamap_dot_v1_dot_openelevation__pb2.AreaRangesResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/propagamap.OpenElevation/AreaRangesElevation',
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.SerializeToString,
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRangesResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
