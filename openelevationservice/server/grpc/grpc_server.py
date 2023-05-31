@@ -88,15 +88,16 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             
             result = []
             for feature in collection_queried['features']:
+                heightBase = int(feature['properties']['heightBase'])
                 if feature['geometry']['type'] == 'Polygon':
                     result.append(defs.UnitedArea(
-                        baseElevation=int(feature['properties']['heightBase']),
+                        baseElevation=heightBase,
                         area=self._create_proto_geo_polygon(feature['geometry']['coordinates']),
                     ))
                 else:
                     for polygon in feature['geometry']['coordinates']:
                         result.append(defs.UnitedArea(
-                            baseElevation=int(feature['properties']['heightBase']),
+                            baseElevation=heightBase,
                             area=self._create_proto_geo_polygon(polygon),
                         ))
             
