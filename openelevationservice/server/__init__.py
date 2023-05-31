@@ -97,14 +97,15 @@ def create_app(script_info=None):
         'db': db}
     )
 
-    #grpc_url = '127.0.0.1:5005'
-    #with app.app_context():
-    #    oes_grpc_server.serve(grpc_url)
-    #log.info("Started gRPC server on {}".format(grpc_url))
-    #grpc_process = Process(
-    #    target=oes_grpc_server.serve,
-    #    args=(grpc_url,)
-    #)
-    #grpc_process.start()
+    # TODO: Allow gRPC server to run in parallel if needed
+    # grpc_url = '127.0.0.1:5005'
+    # with app.app_context():
+    #     oes_grpc_server.serve(grpc_url)
+    # log.info("Started gRPC server on {}".format(grpc_url))
+    # grpc_process = Process(
+    #     target=oes_grpc_server.serve,
+    #     args=(grpc_url,)
+    # )
+    # grpc_process.start()
 
     return app
