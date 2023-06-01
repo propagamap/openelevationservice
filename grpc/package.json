@@ -11,8 +11,8 @@
   "author": "liu-hanli <hanli.liu@edu.uah.es>",
   "license": "MIT",
   "scripts": {
-    "generate": "buf generate --config ./node_buf_config/buf.yaml --template ./node_buf_config/buf.gen.linux.yaml && tsc",
-    "generate:win": "buf generate --config ./node_buf_config/buf.yaml --template ./node_buf_config/buf.gen.win.yaml && tsc"
+    "build": "buf generate --config ./node_buf_config/buf.yaml --template ./node_buf_config/buf.gen.linux.yaml && tsc",
+    "build:win": "buf generate --config ./node_buf_config/buf.yaml --template ./node_buf_config/buf.gen.win.yaml && tsc"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.8.14",

@@ -31,7 +31,7 @@ yarn install
 - Build definition files:
 
 ```bash
-yarn generate
+yarn build
 ```
 
 - Publish package:
@@ -71,7 +71,7 @@ yarn install
 - Build definition files:
 
 ```bash
-yarn generate:win
+yarn build:win
 ```
 
 - Publish package:
