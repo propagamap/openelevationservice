@@ -5,7 +5,6 @@ from openelevationservice.server.utils.logger import get_logger
 from openelevationservice.server.config import SETTINGS
 from openelevationservice.server.db_import.models import db
 from openelevationservice.server.db_import import filestreams
-from openelevationservice.server.grpc.grpc_server import grpc_serve
 
 import click
 
@@ -13,12 +12,22 @@ log = get_logger(__name__)
 
 app = create_app()
 
-@app.cli.command()
-def grpc():
-    """Starts the gRPC server"""
-    grpc_url = '127.0.0.1:5005'
-    log.info("gRPC server starting on port {}".format(grpc_url))
-    grpc_serve(app, grpc_url)
+
+# gRPC server definitions, the dependencies required are not added to "requirements.txt" yet.
+# Added try-catch for this part to maintain usability of HTTP protocol without additional dependencies.
+# Dependencies: "grpcio-tools>=1.54.0", "grpcio-reflection>=1.54.0"
+try:
+    from openelevationservice.server.grpc.grpc_server import grpc_serve
+
+    @app.cli.command()
+    def grpc():
+        """Starts the gRPC server"""
+        grpc_url = '127.0.0.1:5005'
+        log.info("gRPC server starting on port {}".format(grpc_url))
+        grpc_serve(app, grpc_url)
+
+except ImportError:
+    log.info("gRPC server configuration not set yet for this version.")
 
 
 @app.cli.command()
