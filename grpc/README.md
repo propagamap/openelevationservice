@@ -1,5 +1,7 @@
 # OES gRPC definitions
 
+The additional dependencies are also required to run the server in gRPC mode.
+
 ## Linux
 
 ### Regenerate Python server definitions
@@ -10,6 +12,7 @@ Run the following commands in the **root folder** of this repository.
 
 ```bash
 pip3 install grpcio-tools
+pip3 install grpcio-reflection
 ```
 
 - Build definition files:
@@ -50,6 +53,7 @@ Run the following commands in the **root folder** of this repository.
 
 ```bash
 pip3 install grpcio-tools
+pip3 install grpcio-reflection
 ```
 
 - Build definition files:

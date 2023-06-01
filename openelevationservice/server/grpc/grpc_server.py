@@ -2,6 +2,7 @@ from concurrent import futures
 from openelevationservice.server.api import querybuilder, views
 from openelevationservice.server.utils import convert
 import grpc
+from grpc_reflection.v1alpha import reflection
 from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
@@ -112,7 +113,14 @@ def grpc_serve(app, port_url):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     openelevation_pb2_grpc.add_OpenElevationServicer_to_server(
         OpenElevationServicer(app), server)
+    
+    SERVICE_NAMES = (
+        defs.DESCRIPTOR.services_by_name['OpenElevation'].full_name,
+        reflection.SERVICE_NAME,
+    )
 
+    reflection.enable_server_reflection(SERVICE_NAMES, server)
+    
     # TODO: use correct credentials if needed
     # if '-s' in sys.argv[1:]:
     #     privkey = open('./test_ssl/test_key.pem', 'rb').read()
