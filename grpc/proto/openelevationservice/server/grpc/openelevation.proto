@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package propagamap;
+
+message LatLon {
+  double lat = 1;
+  double lon = 2;
+}
+
+message Elevation {
+  int32 value = 1;
+}
+
+message LineRequest {
+  LatLon start = 1;
+  LatLon end = 2;
+}
+
+message LatLonElevation {
+  double lat = 1;
+  double lon = 2;
+  int32 elevation = 3;
+}
+
+message LineResponse {
+  repeated LatLonElevation points = 1;
+}
+
+message AreaRequest {
+  LatLon bottomLeft = 1;
+  LatLon topRight = 2;
+}
+
+message AreaPointsResponse {
+  repeated LatLonElevation points = 1;
+}
+
+message LineString {
+  repeated LatLon points = 1;
+}
+
+message Area {
+  repeated LineString boundaries = 1;
+}
+
+message UnitedArea {
+  int32 baseElevation = 1;
+  Area area = 2;
+}
+
+message AreaRangesResponse {
+  repeated UnitedArea unions = 1;
+  int32 minElevation = 2;
+  int32 maxElevation = 3;
+}
+
+service OpenElevation {
+  rpc PointElevation(LatLon) returns (Elevation);
+  rpc LineElevation(LineRequest) returns (LineResponse);
+  rpc AreaPointsElevation(AreaRequest) returns (AreaPointsResponse);
+  rpc AreaRangesElevation(AreaRequest) returns (AreaRangesResponse);
+}

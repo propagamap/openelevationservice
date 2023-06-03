@@ -20,3 +20,7 @@ dist/
 *egg-info/
 *.in
 build/
+
+# gRPC
+grpc/node_modules/
+grpc/node_dist/

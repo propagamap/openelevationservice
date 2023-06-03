@@ -42,8 +42,7 @@ def format_PixelAsGeoms(result_pixels):
         heights.append(int(subcolumns[1]))
     
     return func.unnest(literal_column("ARRAY{}".format(geoms))), \
-           func.unnest(literal_column("ARRAY{}".format(heights))), \
-           min(heights), max(heights)
+           func.unnest(literal_column("ARRAY{}".format(heights)))
 
 
 def polygon_coloring_elevation(geometry, dataset):
@@ -58,7 +57,7 @@ def polygon_coloring_elevation(geometry, dataset):
     
     :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
         
-    :returns: 3D polygon as GeoJSON or WKT
+    :returns: 3D polygon as GeoJSON or WKT, range of elevation in the polygon
     :rtype: string
     """
     Model = _getModel(dataset)
@@ -80,27 +79,39 @@ def polygon_coloring_elevation(geometry, dataset):
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
-        polygon_col, height_col, min_height, max_height = format_PixelAsGeoms(result_pixels)
+        polygon_col, height_col = format_PixelAsGeoms(result_pixels)
 
-        column_set = db.session \
+        rebuilt_set = db.session \
                             .query(polygon_col.label("geometry"),
-                                   func.LEAST(func.floor(height_col / range_div), num_ranges).label("colorRange")) \
-                            .subquery().alias('columnSet')
+                                   height_col.label("height")) \
+                            .subquery().alias('rebuiltSet')
+
+        filtered_set = db.session \
+                            .query(rebuilt_set.c.geometry,
+                                   rebuilt_set.c.height) \
+                            .select_from(rebuilt_set) \
+                            .join(query_geom, func.ST_Within(func.ST_Centroid(rebuilt_set.c.geometry), query_geom.c.geom)) \
+                            .subquery().alias('filteredSet')
+
+        ranged_set = db.session \
+                            .query(filtered_set.c.geometry,
+                                   func.LEAST(func.floor(filtered_set.c.height / range_div), num_ranges).label("colorRange")) \
+                            .select_from(filtered_set) \
+                            .subquery().alias('rangedSet')
 
         query_features = db.session \
                             .query(func.jsonb_build_object(
                                 'type', 'Feature',
                                 'geometry', func.ST_AsGeoJson(
                                     func.ST_SimplifyPreserveTopology(func.ST_Union(func.array_agg(
-                                        func.ST_ReducePrecision(column_set.c.geometry, 1e-12)
+                                        func.ST_ReducePrecision(ranged_set.c.geometry, 1e-12)
                                     )), 1e-12)
                                 ).cast(JSON),
                                 'properties', func.json_build_object(
-                                    'heightBase', column_set.c.colorRange * range_div,
+                                    'heightBase', ranged_set.c.colorRange * range_div,
                                 )).label('features') \
-                            ).select_from(column_set) \
-                            .join(query_geom, func.ST_Within(func.ST_Centroid(column_set.c.geometry), query_geom.c.geom)) \
-                            .group_by(column_set.c.colorRange) \
+                            ).select_from(ranged_set) \
+                            .group_by(ranged_set.c.colorRange) \
                             .subquery().alias('rfeatures')
 
         # Return GeoJSON directly in PostGIS
@@ -119,7 +130,13 @@ def polygon_coloring_elevation(geometry, dataset):
     if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
-    
+
+    min_height, max_height = db.session \
+                            .query(func.min(filtered_set.c.height),
+                                   func.max(filtered_set.c.height)) \
+                            .select_from(filtered_set) \
+                            .one()
+
     return result_geom, [min_height, max_height]
 
 
@@ -157,7 +174,7 @@ def polygon_elevation(geometry, format_out, dataset):
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
-        point_col, height_col, *_ = format_PixelAsGeoms(result_pixels)
+        point_col, height_col = format_PixelAsGeoms(result_pixels)
 
         raster_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
