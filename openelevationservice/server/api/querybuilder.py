@@ -93,9 +93,14 @@ def polygon_coloring_elevation(geometry, dataset):
                             .join(query_geom, func.ST_Within(func.ST_Centroid(rebuilt_set.c.geometry), query_geom.c.geom)) \
                             .subquery().alias('filteredSet')
 
+        # The values of colorRange needs to be within 0 and num_ranges
+        # 0 will be used for any height below 0
+        # num_ranges will be used for any height above num_ranges * range_div
         ranged_set = db.session \
                             .query(filtered_set.c.geometry,
-                                   func.LEAST(func.floor(filtered_set.c.height / range_div), num_ranges).label("colorRange")) \
+                                   func.GREATEST(
+                                       func.LEAST(func.floor(filtered_set.c.height / range_div), num_ranges), 0
+                                   ).label("colorRange")) \
                             .select_from(filtered_set) \
                             .subquery().alias('rangedSet')
 
