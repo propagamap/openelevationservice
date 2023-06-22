@@ -277,8 +277,12 @@ def line_elevation(geometry, format_out, dataset):
                                                                      ST_Y(query_getelev.c.geom),
                                                                      func.coalesce(query_getelev.c.z, 0)),
                                               4326).label('geom')) \
-                            .order_by(ST_X(query_getelev.c.geom)) \
+                            .order_by(func.ST_Distance(
+                                query_getelev.c.geom,
+                                func.ST_SetSRID(func.ST_PointN(geometry.wkt, 1), 4326)
+                            )) \
                             .subquery().alias('points3d')
+                            
 
         if format_out == 'geojson':
             # Return GeoJSON directly in PostGIS
