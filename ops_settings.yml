@@ -7,8 +7,8 @@ srtm_parameters:
   password:
 provider_parameters:
   table_name: oes_cgiar
-  db_name: 
-  user_name:
-  password:
-  host: localhost
-  port: 5432
+  db_name: gis
+  user_name: docker
+  password: docker
+  host: 192.168.71.37
+  port: 49153

@@ -44,7 +44,7 @@ ENV APP_SETTINGS openelevationservice.server.config.ProductionConfig
 
 WORKDIR /deploy/app
 
-EXPOSE 5000
+EXPOSE 5005
 
 # Start gunicorn
-CMD ["/oes_venv/bin/gunicorn", "--config", "/deploy/gunicorn_config.py", "manage:app"]
+CMD ["/oes_venv/bin/gunicorn", "--config", "/deploy/gunicorn_config.py", "manage:app", "grpc"]
