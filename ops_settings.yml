@@ -1,5 +1,9 @@
 ---
+<<<<<<< Updated upstream
 attribution: "internal service of propamap | data by http://srtm.csi.cgiar.org"
+=======
+attribution: "intrnal service of propamap | data by http://srtm.csi.cgiar.org"
+>>>>>>> Stashed changes
 coord_precision: 0.00083333333333333333
 maximum_nodes: 2000
 srtm_parameters:
@@ -7,8 +11,15 @@ srtm_parameters:
   password:
 provider_parameters:
   table_name: oes_cgiar
+<<<<<<< Updated upstream
   db_name: gis
   user_name: docker
   password: docker
   host: 192.168.71.37
+=======
+  db_name: gis 
+  user_name: docker
+  password: docker
+  host: propamap.cc.uah.es
+>>>>>>> Stashed changes
   port: 49153
