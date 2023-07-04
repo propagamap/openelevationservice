@@ -93,9 +93,14 @@ def polygon_coloring_elevation(geometry, dataset):
                             .join(query_geom, func.ST_Within(func.ST_Centroid(rebuilt_set.c.geometry), query_geom.c.geom)) \
                             .subquery().alias('filteredSet')
 
+        # The values of colorRange needs to be within 0 and num_ranges
+        # 0 will be used for any height below 0
+        # num_ranges will be used for any height above num_ranges * range_div
         ranged_set = db.session \
                             .query(filtered_set.c.geometry,
-                                   func.LEAST(func.floor(filtered_set.c.height / range_div), num_ranges).label("colorRange")) \
+                                   func.GREATEST(
+                                       func.LEAST(func.floor(filtered_set.c.height / range_div), num_ranges), 0
+                                   ).label("colorRange")) \
                             .select_from(filtered_set) \
                             .subquery().alias('rangedSet')
 
@@ -272,8 +277,12 @@ def line_elevation(geometry, format_out, dataset):
                                                                      ST_Y(query_getelev.c.geom),
                                                                      func.coalesce(query_getelev.c.z, 0)),
                                               4326).label('geom')) \
-                            .order_by(ST_X(query_getelev.c.geom)) \
+                            .order_by(func.ST_Distance(
+                                query_getelev.c.geom,
+                                func.ST_SetSRID(func.ST_PointN(geometry.wkt, 1), 4326)
+                            )) \
                             .subquery().alias('points3d')
+                            
 
         if format_out == 'geojson':
             # Return GeoJSON directly in PostGIS
