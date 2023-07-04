@@ -246,9 +246,10 @@ def line_elevation(geometry, format_out, dataset):
         
         if int(num_points) != 2:
             raise InvalidUsage(400, 4002, "Actually, only LineString with exactly 2 points are supported!")
+
+        minX, minY, maxX, maxY = geometry.bounds
+        lineLen = ((maxX - minX) ** 2 + (maxY - minY) ** 2) ** 0.5
         
-        # geometry.bounds = (minX, minY, maxX, maxY)
-        lineLen = max(geometry.bounds[2] - geometry.bounds[0], geometry.bounds[3] - geometry.bounds[1])
 
         points_clause = [
             func.ST_PointN(geometry.wkt, 1),
