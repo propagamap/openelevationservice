@@ -62,9 +62,7 @@ def polygon_coloring_elevation(geometry, dataset):
     """
     Model = _getModel(dataset)
 
-    # May be a good idea to make this a parameter from request
     num_ranges = 23
-    range_div = 43
     
     if geometry.geom_type == 'Polygon':
         query_geom = db.session \
@@ -92,6 +90,14 @@ def polygon_coloring_elevation(geometry, dataset):
                             .select_from(rebuilt_set) \
                             .join(query_geom, func.ST_Within(func.ST_Centroid(rebuilt_set.c.geometry), query_geom.c.geom)) \
                             .subquery().alias('filteredSet')
+        
+        min_height, max_height = db.session \
+                            .query(func.min(filtered_set.c.height),
+                                    func.max(filtered_set.c.height)) \
+                            .select_from(filtered_set) \
+                            .one()
+        
+        range_div = (max_height - min_height + 1) / num_ranges
 
         # The values of colorRange needs to be within 0 and num_ranges
         # 0 will be used for any height below 0
@@ -99,7 +105,7 @@ def polygon_coloring_elevation(geometry, dataset):
         ranged_set = db.session \
                             .query(filtered_set.c.geometry,
                                    func.GREATEST(
-                                       func.LEAST(func.floor(filtered_set.c.height / range_div), num_ranges), 0
+                                       func.LEAST(func.floor((filtered_set.c.height - min_height) / range_div), num_ranges), 0
                                    ).label("colorRange")) \
                             .select_from(filtered_set) \
                             .subquery().alias('rangedSet')
@@ -113,7 +119,7 @@ def polygon_coloring_elevation(geometry, dataset):
                                     )), 1e-12)
                                 ).cast(JSON),
                                 'properties', func.json_build_object(
-                                    'heightBase', ranged_set.c.colorRange * range_div,
+                                    'heightBase', ranged_set.c.colorRange * range_div + min_height,
                                 )).label('features') \
                             ).select_from(ranged_set) \
                             .group_by(ranged_set.c.colorRange) \
@@ -135,12 +141,6 @@ def polygon_coloring_elevation(geometry, dataset):
     if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
-
-    min_height, max_height = db.session \
-                            .query(func.min(filtered_set.c.height),
-                                   func.max(filtered_set.c.height)) \
-                            .select_from(filtered_set) \
-                            .one()
 
     return result_geom, [min_height, max_height]
 
