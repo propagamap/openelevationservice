@@ -37,9 +37,13 @@ yarn install
 yarn build
 ```
 
+- (For the first time only on each machine) Configure npm for this folder following the instructions in the [organization documentation](https://github.com/propagamap/docs/wiki/GitHub#publish-package-cheatsheet).
+
 - Publish package:
 
 ```bash
+yarn version --patch
+
 npm publish
 ```
 
@@ -78,8 +82,12 @@ yarn install
 yarn build:win
 ```
 
+- (For the first time only on each machine) Configure npm for this folder following the instructions in the [organization documentation](https://github.com/propagamap/docs/wiki/GitHub#publish-package-cheatsheet).
+
 - Publish package:
 
 ```bash
+yarn version --patch
+
 npm publish
 ```
