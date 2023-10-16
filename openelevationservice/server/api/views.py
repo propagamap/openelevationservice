@@ -100,10 +100,10 @@ def elevationline():
                                           4000,
                                           f'Invalid format_in value "{format_in}"')
         
-    if len(list(geom.coords)) > SETTINGS['maximum_nodes']:
-        raise api_exceptions.InvalidUsage(status_code=400,
-                                          error_code=4003,
-                                          message='Maximum number of nodes exceeded.')
+    # if len(list(geom.coords)) > SETTINGS['maximum_nodes']:
+    #     raise api_exceptions.InvalidUsage(status_code=400,
+    #                                       error_code=4003,
+    #                                       message='Maximum number of nodes exceeded.')
                 
     results = ResponseBuilder().__dict__
     geom_queried = querybuilder.line_elevation(geom, format_out, dataset)
