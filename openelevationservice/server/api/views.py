@@ -37,7 +37,7 @@ def elevationpolygon():
                 
     results = ResponseBuilder().__dict__
     if format_out == 'colorpolygon':
-        geom_queried, range_queried = querybuilder.polygon_coloring_elevation(geom, dataset)
+        geom_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, dataset)
     else:
         geom_queried = querybuilder.polygon_elevation(geom, format_out, dataset)
     
@@ -51,6 +51,7 @@ def elevationpolygon():
     elif format_out == 'colorpolygon':
         results['geometry'] = geom_queried
         results['height_range'] = range_queried
+        results['average_height'] = avg_queried
     else:
         raise api_exceptions.InvalidUsage(400,
                                           4000,

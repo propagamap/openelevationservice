@@ -85,7 +85,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     def AreaRangesElevation(self, request, context):
         with self.app.app_context():
             geom = convert.polygon_to_geometry(self._format_area_request(request))
-            collection_queried, range_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
+            collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
             
             result = []
             for feature in collection_queried['features']:
@@ -105,7 +105,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             return defs.AreaRangesResponse(
                 unions=result,
                 minElevation=range_queried[0],
-                maxElevation=range_queried[1]
+                maxElevation=range_queried[1],
+                avgElevation=avg_queried,
             )
 
 

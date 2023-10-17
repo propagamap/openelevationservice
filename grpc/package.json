@@ -1,7 +1,7 @@
 {
   "name": "@propagamap/oes-grpc-ts",
   "description": "OpenElevationService gRPC definition for TypeScript client",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "./node_dist/index.js",
   "types": "./node_dist/index.d.ts",
   "files": [
