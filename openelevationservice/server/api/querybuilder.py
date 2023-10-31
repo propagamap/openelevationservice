@@ -14,7 +14,6 @@ from sqlalchemy.dialects.postgresql import array
 log = get_logger(__name__)
 
 coord_precision = float(SETTINGS['coord_precision'])
-# division_limit = 1 / float(SETTINGS['maximum_nodes'])
 
 def _getModel(dataset):
     """
@@ -259,7 +258,7 @@ def line_elevation(geometry, format_out, dataset):
         if lineLen != 0:
             points_clause.insert(1, func.ST_LineInterpolatePoints(
                 geometry.wkt,
-                min(1, coord_precision / lineLen) # max(min(1, coord_precision / lineLen), division_limit)
+                min(1, coord_precision / lineLen)
             ))
 
         query_points2d = db.session \
