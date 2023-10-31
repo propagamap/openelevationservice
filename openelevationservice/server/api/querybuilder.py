@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import array
 log = get_logger(__name__)
 
 coord_precision = float(SETTINGS['coord_precision'])
-division_limit = 1 / float(SETTINGS['maximum_nodes'])
+# division_limit = 1 / float(SETTINGS['maximum_nodes'])
 
 def _getModel(dataset):
     """
@@ -91,9 +91,10 @@ def polygon_coloring_elevation(geometry, dataset):
                             .join(query_geom, func.ST_Within(func.ST_Centroid(rebuilt_set.c.geometry), query_geom.c.geom)) \
                             .subquery().alias('filteredSet')
         
-        min_height, max_height = db.session \
+        min_height, max_height, avg_height = db.session \
                             .query(func.min(filtered_set.c.height),
-                                    func.max(filtered_set.c.height)) \
+                                   func.max(filtered_set.c.height),
+                                   func.avg(filtered_set.c.height)) \
                             .select_from(filtered_set) \
                             .one()
         
@@ -142,7 +143,7 @@ def polygon_coloring_elevation(geometry, dataset):
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
 
-    return result_geom, [min_height, max_height]
+    return result_geom, [min_height, max_height], avg_height
 
 
 def polygon_elevation(geometry, format_out, dataset):
@@ -258,7 +259,7 @@ def line_elevation(geometry, format_out, dataset):
         if lineLen != 0:
             points_clause.insert(1, func.ST_LineInterpolatePoints(
                 geometry.wkt,
-                max(min(1, coord_precision / lineLen), division_limit)
+                min(1, coord_precision / lineLen) # max(min(1, coord_precision / lineLen), division_limit)
             ))
 
         query_points2d = db.session \

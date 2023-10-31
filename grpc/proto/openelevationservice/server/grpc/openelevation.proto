@@ -52,6 +52,7 @@ message AreaRangesResponse {
   repeated UnitedArea unions = 1;
   int32 minElevation = 2;
   int32 maxElevation = 3;
+  float avgElevation = 4;
 }
 
 service OpenElevation {
