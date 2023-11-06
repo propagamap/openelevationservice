@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@grpc/grpc-js@^1.9.2":
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.9.2.tgz#151148f6485eab8fb13fe53042d25f4ffa9c7d09"
-  integrity sha512-Lf2pUhNTaviEdEaGgjU+29qw3arX7Qd/45q66F3z1EV5hroE6wM9xSHPvjB8EY+b1RmKZgwnLWXQorC6fZ9g5g==
+"@grpc/grpc-js@^1.9.3":
+  version "1.9.5"
+  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.9.5.tgz#22e283754b7b10d1ad26c3fb21849028dcaabc53"
+  integrity sha512-iouYNlPxRAwZ2XboDT+OfRKHuaKHiqjB5VFYZ0NFrHkbEF+AV3muIUY9olQsp8uxU4VvRCMiRk9ftzFDGb61aw==
   dependencies:
     "@grpc/proto-loader" "^0.7.8"
     "@types/node" ">=12.12.47"
@@ -88,10 +88,10 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
-"@types/google-protobuf@^3.15.6":
-  version "3.15.6"
-  resolved "https://registry.yarnpkg.com/@types/google-protobuf/-/google-protobuf-3.15.6.tgz#674a69493ef2c849b95eafe69167ea59079eb504"
-  integrity sha512-pYVNNJ+winC4aek+lZp93sIKxnXt5qMkuKmaqS3WGuTq0Bw1ZDYNBgzG5kkdtwcv+GmYJGo3yEg6z2cKKAiEdw==
+"@types/google-protobuf@^3.15.7":
+  version "3.15.7"
+  resolved "https://registry.yarnpkg.com/@types/google-protobuf/-/google-protobuf-3.15.7.tgz#882e7351bc8ccf30bb21c507cc4597cf76f8888b"
+  integrity sha512-pIEMnb04J60c5eExVLUY/R4eWT5QEQ5cC792JOSfDI3kLjaKC4TjdgMp3xIrN1vxbi2Zk8LcscTm0VaNrIdniA==
 
 "@types/node@>=12.12.47", "@types/node@>=13.7.0":
   version "20.5.9"
