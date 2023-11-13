@@ -15,6 +15,8 @@ log = get_logger(__name__)
 
 coord_precision = float(SETTINGS['coord_precision'])
 
+NO_DATA_VALUE = -32768
+
 def _getModel(dataset):
     """
     Choose model based on dataset parameter
@@ -71,7 +73,7 @@ def polygon_coloring_elevation(geometry, dataset):
 
         result_pixels = db.session \
                             .query(func.DISTINCT(func.ST_PixelAsPolygons(
-                                func.ST_Clip(Model.rast, query_geom.c.geom, 0), #.geom
+                                func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
                                 1, False))) \
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
@@ -95,6 +97,7 @@ def polygon_coloring_elevation(geometry, dataset):
                                    func.max(filtered_set.c.height),
                                    func.avg(filtered_set.c.height)) \
                             .select_from(filtered_set) \
+                            .where(filtered_set.c.height != NO_DATA_VALUE) \
                             .one()
         
         range_div = (max_height - min_height + 1) / num_ranges
@@ -174,7 +177,7 @@ def polygon_elevation(geometry, format_out, dataset):
 
         result_pixels = db.session \
                             .query(func.DISTINCT(func.ST_PixelAsCentroids(
-                                func.ST_Clip(Model.rast, query_geom.c.geom, 0), #.geom
+                                func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
                                 1, False))) \
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
@@ -276,7 +279,7 @@ def line_elevation(geometry, format_out, dataset):
         query_points3d = db.session \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                      ST_Y(query_getelev.c.geom),
-                                                                     func.coalesce(query_getelev.c.z, 0)),
+                                                                     func.coalesce(query_getelev.c.z, NO_DATA_VALUE)),
                                               4326).label('geom')) \
                             .order_by(func.ST_Distance(
                                 query_getelev.c.geom,
@@ -346,13 +349,13 @@ def point_elevation(geometry, format_out, dataset):
             query_final = db.session \
                                 .query(func.ST_AsGeoJSON(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                            ST_Y(query_getelev.c.geom),
-                                                                           func.coalesce(query_getelev.c.z, 0)
+                                                                           func.coalesce(query_getelev.c.z, NO_DATA_VALUE)
                                                                         )))
         else:
             query_final = db.session \
                                 .query(func.ST_AsText(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                         ST_Y(query_getelev.c.geom),
-                                                                        func.coalesce(query_getelev.c.z, 0)
+                                                                        func.coalesce(query_getelev.c.z, NO_DATA_VALUE)
                                                                     )))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Point, not {}!".format(geometry.geom_type))
