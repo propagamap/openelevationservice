@@ -7,7 +7,7 @@ from openelevationservice.server.db_import.models import db, Cgiar
 from openelevationservice.server.api.api_exceptions import InvalidUsage
 
 from geoalchemy2.functions import ST_Value, ST_Intersects, ST_X, ST_Y # ST_DumpPoints, ST_Dump, 
-from sqlalchemy import func, literal_column
+from sqlalchemy import func, literal_column, case
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
@@ -102,13 +102,10 @@ def polygon_coloring_elevation(geometry, dataset):
         
         range_div = (max_height - min_height + 1) / num_ranges
 
-        # The values of colorRange needs to be within 0 and num_ranges
-        # 0 will be used for any height below 0
-        # num_ranges will be used for any height above num_ranges * range_div
         ranged_set = db.session \
                             .query(filtered_set.c.geometry,
                                    func.GREATEST(
-                                       func.LEAST(func.floor((filtered_set.c.height - min_height) / range_div), num_ranges), 0
+                                       func.LEAST(func.floor((filtered_set.c.height - min_height) / range_div), num_ranges), -1
                                    ).label("colorRange")) \
                             .select_from(filtered_set) \
                             .subquery().alias('rangedSet')
@@ -122,7 +119,10 @@ def polygon_coloring_elevation(geometry, dataset):
                                     )), 1e-12)
                                 ).cast(JSON),
                                 'properties', func.json_build_object(
-                                    'heightBase', ranged_set.c.colorRange * range_div + min_height,
+                                    'heightBase', case(
+                                        (ranged_set.c.colorRange < 0, NO_DATA_VALUE),
+                                        else_ = ranged_set.c.colorRange * range_div + min_height
+                                    ),
                                 )).label('features') \
                             ).select_from(ranged_set) \
                             .group_by(ranged_set.c.colorRange) \
