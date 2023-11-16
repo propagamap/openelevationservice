@@ -47,4 +47,4 @@ WORKDIR /deploy/app
 EXPOSE 5000
 
 # Start gunicorn
-CMD ["/oes_venv/bin/gunicorn", "--config", "/deploy/gunicorn_config.py", "manage:app"]
+CMD ["/oes_venv/bin/gunicorn", "--config", "/deploy/gunicorn_config.py", "manage:app", "grpc"]
