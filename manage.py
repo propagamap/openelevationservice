@@ -22,7 +22,7 @@ try:
     @app.cli.command()
     def grpc():
         """Starts the gRPC server"""
-        grpc_url = '127.0.0.1:5005'
+        grpc_url = '0.0.0.0:5000'
         log.info("gRPC server starting on port {}".format(grpc_url))
         grpc_serve(app, grpc_url)
 

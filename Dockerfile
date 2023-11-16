@@ -7,7 +7,6 @@ RUN mkdir -p /deploy/app
 
 COPY openelevationservice /deploy/app/openelevationservice
 COPY ops_settings_docker.yml /deploy/app/openelevationservice/server/ops_settings.yml
-COPY gunicorn_config.py /deploy/gunicorn_config.py
 COPY manage.py /deploy/app/manage.py
 COPY requirements.txt /deploy/app/requirements.txt
 
@@ -46,5 +45,5 @@ WORKDIR /deploy/app
 
 EXPOSE 5000
 
-# Start gunicorn
-CMD ["/oes_venv/bin/gunicorn", "--config", "/deploy/gunicorn_config.py", "manage:app", "grpc"]
+# Start server
+CMD ["/oes_venv/bin/flask", "--app", "manage", "grpc"]
