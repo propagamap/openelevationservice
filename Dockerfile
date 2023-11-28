@@ -7,8 +7,7 @@ RUN mkdir -p /deploy/app
 
 COPY openelevationservice /deploy/app/openelevationservice
 COPY ops_settings_docker.yml /deploy/app/openelevationservice/server/ops_settings.yml
-COPY gunicorn_config.py /deploy/gunicorn_config.py
-COPY manage.py /deploy/app/manage.py
+COPY run_grpc_server.py /deploy/app/run_grpc_server.py
 COPY requirements.txt /deploy/app/requirements.txt
 
 RUN python3 -m venv /oes_venv
@@ -38,13 +37,10 @@ ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 # oes/flask variables
 ENV OES_LOGLEVEL INFO
-ENV FLASK_APP manage
-ENV FLASK_ENV production
-ENV APP_SETTINGS openelevationservice.server.config.ProductionConfig
 
 WORKDIR /deploy/app
 
 EXPOSE 5000
 
-# Start gunicorn
-CMD ["/oes_venv/bin/gunicorn", "--config", "/deploy/gunicorn_config.py", "manage:app"]
+# Start server
+CMD ["/oes_venv/bin/python3", "run_grpc_server.py"]

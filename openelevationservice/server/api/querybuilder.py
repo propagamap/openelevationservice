@@ -2,7 +2,8 @@
 
 from openelevationservice import SETTINGS
 from openelevationservice.server.utils.logger import get_logger
-from openelevationservice.server.db_import.models import db, Cgiar
+#from openelevationservice.server.db_import.models import db, Cgiar
+from openelevationservice.server.grpc.db_grpc import db, Cgiar
 # from openelevationservice.server.utils.custom_func import ST_SnapToGrid
 from openelevationservice.server.api.api_exceptions import InvalidUsage
 
@@ -66,12 +67,12 @@ def polygon_coloring_elevation(geometry, dataset):
     num_ranges = 23
     
     if geometry.geom_type == 'Polygon':
-        query_geom = db.session \
+        query_geom = db.get_session() \
                             .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
                             .label('geom')) \
                             .subquery().alias('pGeom')
 
-        result_pixels = db.session \
+        result_pixels = db.get_session() \
                             .query(func.DISTINCT(func.ST_PixelAsPolygons(
                                 func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
                                 1, False))) \
@@ -80,19 +81,19 @@ def polygon_coloring_elevation(geometry, dataset):
         
         polygon_col, height_col = format_PixelAsGeoms(result_pixels)
 
-        rebuilt_set = db.session \
+        rebuilt_set = db.get_session() \
                             .query(polygon_col.label("geometry"),
                                    height_col.label("height")) \
                             .subquery().alias('rebuiltSet')
 
-        filtered_set = db.session \
+        filtered_set = db.get_session() \
                             .query(rebuilt_set.c.geometry,
                                    rebuilt_set.c.height) \
                             .select_from(rebuilt_set) \
                             .join(query_geom, func.ST_Within(func.ST_Centroid(rebuilt_set.c.geometry), query_geom.c.geom)) \
                             .subquery().alias('filteredSet')
         
-        min_height, max_height, avg_height = db.session \
+        min_height, max_height, avg_height = db.get_session() \
                             .query(func.min(filtered_set.c.height),
                                    func.max(filtered_set.c.height),
                                    func.avg(filtered_set.c.height)) \
@@ -102,7 +103,7 @@ def polygon_coloring_elevation(geometry, dataset):
         
         range_div = (max_height - min_height + 1) / num_ranges
 
-        ranged_set = db.session \
+        ranged_set = db.get_session() \
                             .query(filtered_set.c.geometry,
                                    func.GREATEST(
                                        func.LEAST(func.floor((filtered_set.c.height - min_height) / range_div), num_ranges), -1
@@ -110,7 +111,7 @@ def polygon_coloring_elevation(geometry, dataset):
                             .select_from(filtered_set) \
                             .subquery().alias('rangedSet')
 
-        query_features = db.session \
+        query_features = db.get_session() \
                             .query(func.jsonb_build_object(
                                 'type', 'Feature',
                                 'geometry', func.ST_AsGeoJson(
@@ -129,7 +130,7 @@ def polygon_coloring_elevation(geometry, dataset):
                             .subquery().alias('rfeatures')
 
         # Return GeoJSON directly in PostGIS
-        query_final = db.session \
+        query_final = db.get_session() \
                             .query(func.jsonb_build_object(
                                 'type', 'FeatureCollection',
                                 'features', func.jsonb_agg(query_features.c.features))) \
@@ -170,12 +171,12 @@ def polygon_elevation(geometry, format_out, dataset):
     Model = _getModel(dataset)
     
     if geometry.geom_type == 'Polygon':
-        query_geom = db.session \
+        query_geom = db.get_session() \
                             .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
                             .label('geom')) \
                             .subquery().alias('pGeom')
 
-        result_pixels = db.session \
+        result_pixels = db.get_session() \
                             .query(func.DISTINCT(func.ST_PixelAsCentroids(
                                 func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
                                 1, False))) \
@@ -184,7 +185,7 @@ def polygon_elevation(geometry, format_out, dataset):
         
         point_col, height_col = format_PixelAsGeoms(result_pixels)
 
-        raster_points3d = db.session \
+        raster_points3d = db.get_session() \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
                                                                      ST_Y(point_col),
                                                                      height_col),
@@ -192,7 +193,7 @@ def polygon_elevation(geometry, format_out, dataset):
                             .order_by(ST_X(point_col), ST_Y(point_col)) \
                             .subquery().alias('raster3d')
 
-        query_points3d = db.session \
+        query_points3d = db.get_session() \
                             .query(raster_points3d.c.geom) \
                             .select_from(raster_points3d) \
                             .join(query_geom, func.ST_Within(raster_points3d.c.geom, query_geom.c.geom)) \
@@ -200,12 +201,12 @@ def polygon_elevation(geometry, format_out, dataset):
 
         if format_out == 'geojson':
             # Return GeoJSON directly in PostGIS
-            query_final = db.session \
+            query_final = db.get_session() \
                               .query(func.ST_AsGeoJson(func.ST_Collect(query_points3d.c.geom)))
             
         else:
             # Else return the WKT of the geometry
-            query_final = db.session \
+            query_final = db.get_session() \
                               .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom)))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
@@ -243,7 +244,7 @@ def line_elevation(geometry, format_out, dataset):
     Model = _getModel(dataset)
     
     if geometry.geom_type == 'LineString':
-        num_points = db.session \
+        num_points = db.get_session() \
                         .query(func.ST_NPoints(geometry.wkt)) \
                         .scalar()
         
@@ -264,19 +265,19 @@ def line_elevation(geometry, format_out, dataset):
                 min(1, coord_precision / lineLen)
             ))
 
-        query_points2d = db.session \
+        query_points2d = db.get_session() \
                             .query(func.ST_SetSRID(func.ST_DumpPoints(func.ST_Union(
                                 array(points_clause)
                             )).geom, 4326).label('geom')).subquery().alias('points2d')
 
-        query_getelev = db.session \
+        query_getelev = db.get_session() \
                             .query(func.DISTINCT(query_points2d.c.geom).label('geom'),
                                    ST_Value(Model.rast, query_points2d.c.geom).label('z')) \
                             .select_from(query_points2d) \
                             .join(Model, ST_Intersects(Model.rast, query_points2d.c.geom)) \
                             .subquery().alias('getelevation')
 
-        query_points3d = db.session \
+        query_points3d = db.get_session() \
                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                      ST_Y(query_getelev.c.geom),
                                                                      func.coalesce(query_getelev.c.z, NO_DATA_VALUE)),
@@ -290,12 +291,12 @@ def line_elevation(geometry, format_out, dataset):
 
         if format_out == 'geojson':
             # Return GeoJSON directly in PostGIS
-            query_final = db.session \
+            query_final = db.get_session() \
                               .query(func.ST_AsGeoJson(func.ST_MakeLine(query_points3d.c.geom))) #ST_SnapToGrid(, coord_precision)
             
         else:
             # Else return the WKT of the geometry
-            query_final = db.session \
+            query_final = db.get_session() \
                               .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom))) #ST_SnapToGrid(, coord_precision)
     else:
         raise InvalidUsage(400, 4002, "Needs to be a LineString, not a {}!".format(geometry.geom_type))
@@ -332,12 +333,12 @@ def point_elevation(geometry, format_out, dataset):
     Model = _getModel(dataset)
     
     if geometry.geom_type == "Point":
-        query_point2d = db.session \
+        query_point2d = db.get_session() \
                             .query(func.ST_SetSRID(func.St_PointFromText(geometry.wkt), 4326).label('geom')) \
                             .subquery() \
                             .alias('points2d')
         
-        query_getelev = db.session \
+        query_getelev = db.get_session() \
                             .query(query_point2d.c.geom,
                                    ST_Value(Model.rast, query_point2d.c.geom).label('z')) \
                             .select_from(query_point2d) \
@@ -346,13 +347,13 @@ def point_elevation(geometry, format_out, dataset):
                             .subquery().alias('getelevation')
         
         if format_out == 'geojson': 
-            query_final = db.session \
+            query_final = db.get_session() \
                                 .query(func.ST_AsGeoJSON(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                            ST_Y(query_getelev.c.geom),
                                                                            func.coalesce(query_getelev.c.z, NO_DATA_VALUE)
                                                                         )))
         else:
-            query_final = db.session \
+            query_final = db.get_session() \
                                 .query(func.ST_AsText(func.ST_MakePoint(ST_X(query_getelev.c.geom),
                                                                         ST_Y(query_getelev.c.geom),
                                                                         func.coalesce(query_getelev.c.z, NO_DATA_VALUE)
