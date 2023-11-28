@@ -7,16 +7,13 @@ from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
 
-
 class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     """Provides methods that implement functionality of route guide server."""
 
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.app = app
 
     def PointElevation(self, request, context):
-        with self.app.app_context():
             geom = convert.point_to_geometry([request.lon, request.lat])
             geom_queried = querybuilder.point_elevation(geom, 'point', 'srtm')
             geom_shaped = wkt.loads(geom_queried)
@@ -25,7 +22,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             return defs.Elevation(value=elevation)
 
     def LineElevation(self, request, context):
-        with self.app.app_context():
             geom = convert.polyline_to_geometry([
                 [request.start.lon, request.start.lat],
                 [request.end.lon, request.end.lat]
@@ -57,7 +53,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         ]
 
     def AreaPointsElevation(self, request, context):
-        with self.app.app_context():
             geom = convert.polygon_to_geometry(self._format_area_request(request))
             geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
             geom_shaped = wkt.loads(geom_queried)
@@ -83,7 +78,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         ])
 
     def AreaRangesElevation(self, request, context):
-        with self.app.app_context():
             geom = convert.polygon_to_geometry(self._format_area_request(request))
             collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
             
@@ -110,11 +104,11 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             )
 
 
-def grpc_serve(app, port_url):
+def grpc_serve(port_url):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     openelevation_pb2_grpc.add_OpenElevationServicer_to_server(
-        OpenElevationServicer(app), server)
-    
+        OpenElevationServicer(), server)
+        
     SERVICE_NAMES = (
         defs.DESCRIPTOR.services_by_name['OpenElevation'].full_name,
         reflection.SERVICE_NAME,
