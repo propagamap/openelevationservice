@@ -36,6 +36,8 @@ def _getModel(dataset):
 
 def format_PixelAsGeoms(result_pixels):
     # format: [ ('(0101000020E61000000000000000C05240D169039D36003D40,202,1,2)',) , ...
+    if (len(result_pixels) == 0): raise InvalidUsage(404, 4002, 'The requested geometry does not contain any elevation data')
+    
     geoms = []
     heights = []
     for pixel in result_pixels:
