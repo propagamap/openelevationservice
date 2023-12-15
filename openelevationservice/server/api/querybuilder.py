@@ -124,7 +124,7 @@ def polygon_coloring_elevation(geometry, dataset):
                                 'properties', func.json_build_object(
                                     'heightBase', case(
                                         (ranged_set.c.colorRange < 0, NO_DATA_VALUE),
-                                        else_ = ranged_set.c.colorRange * range_div + min_height
+                                        else_ = func.ceil(ranged_set.c.colorRange * range_div + min_height)
                                     ),
                                 )).label('features') \
                             ).select_from(ranged_set) \
