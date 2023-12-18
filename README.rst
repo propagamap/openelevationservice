@@ -151,7 +151,7 @@ When your environment is set up, you can run the import process and start the se
    # Start the server
    flask --app manage run # HTTP mode
    # or
-   flask --app manage grpc # GRPC mode
+   python3 run_grpc_server.py # GRPC mode
 
 The service will now listen on ``http://localhost:5000``.
 
@@ -182,8 +182,10 @@ Steps to establish the environment and run the server:
    # - "psycopg2-binary==2.8.4" by "psycopg2-binary>=2.8.4"
    pip install -r requirements.txt
  
-   # Run the server
-   flask --app manage run
+   # Start the server
+   flask --app manage run # HTTP mode
+   # or
+   python run_grpc_server.py # GRPC mode
 
 Endpoints
 ----------------------------------------------------------
