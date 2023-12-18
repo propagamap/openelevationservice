@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@grpc/grpc-js@^1.9.6":
-  version "1.9.9"
-  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.9.9.tgz#ce3a05439b1c957ec64c2ecdc6f1e4f54e8af797"
-  integrity sha512-vQ1qwi/Kiyprt+uhb1+rHMpyk4CVRMTGNUGGPRGS7pLNfWkdCHrGEnT6T3/JyC2VZgoOX/X1KwdoU0WYQAeYcQ==
+"@grpc/grpc-js@^1.9.10":
+  version "1.9.12"
+  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.9.12.tgz#a45b23a7d9ee1eadc9fa8fe480e27edbc6544cdd"
+  integrity sha512-Um5MBuge32TS3lAKX02PGCnFM4xPT996yLgZNb5H03pn6NyJ4Iwn5YcPq6Jj9yxGRk7WOgaZFtVRH5iTdYBeUg==
   dependencies:
     "@grpc/proto-loader" "^0.7.8"
     "@types/node" ">=12.12.47"
