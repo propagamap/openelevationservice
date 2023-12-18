@@ -1,4 +1,4 @@
-FROM ubuntu:mantic-20231011 AS builder
+FROM ubuntu:mantic AS builder
 
 RUN apt-get update
 RUN apt-get -y install build-essential python3-dev python3-venv
@@ -15,7 +15,7 @@ RUN /bin/bash -c "source /oes_venv/bin/activate"
 RUN /oes_venv/bin/pip3 install wheel
 RUN /oes_venv/bin/pip3 install -r /deploy/app/requirements.txt
 
-FROM ubuntu:mantic-20231011
+FROM ubuntu:mantic
 
 LABEL org.opencontainers.image.source=https://github.com/propagamap/openelevationservice
 
