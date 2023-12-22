@@ -103,40 +103,44 @@ def polygon_coloring_elevation(geometry, dataset):
                             .where(filtered_set.c.height != NO_DATA_VALUE) \
                             .one()
         
-        range_div = (max_height - min_height + 1) / num_ranges
+        if min_height is None or max_height is None:
+            raise InvalidUsage(400, 4002,
+                               'The requested geometry does not contain any elevation data')
+        else:
+            range_div = (max_height - min_height + 1) / num_ranges
 
-        ranged_set = db.get_session() \
-                            .query(filtered_set.c.geometry,
-                                   func.GREATEST(
-                                       func.LEAST(func.floor((filtered_set.c.height - min_height) / range_div), num_ranges), -1
-                                   ).label("colorRange")) \
-                            .select_from(filtered_set) \
-                            .subquery().alias('rangedSet')
+            ranged_set = db.get_session() \
+                                .query(filtered_set.c.geometry,
+                                    func.GREATEST(
+                                        func.LEAST(func.floor((filtered_set.c.height - min_height) / range_div), num_ranges), -1
+                                    ).label("colorRange")) \
+                                .select_from(filtered_set) \
+                                .subquery().alias('rangedSet')
 
-        query_features = db.get_session() \
-                            .query(func.jsonb_build_object(
-                                'type', 'Feature',
-                                'geometry', func.ST_AsGeoJson(
-                                    func.ST_SimplifyPreserveTopology(func.ST_Union(func.array_agg(
-                                        func.ST_ReducePrecision(ranged_set.c.geometry, 1e-12)
-                                    )), 1e-12)
-                                ).cast(JSON),
-                                'properties', func.json_build_object(
-                                    'heightBase', case(
-                                        (ranged_set.c.colorRange < 0, NO_DATA_VALUE),
-                                        else_ = func.ceil(ranged_set.c.colorRange * range_div + min_height)
-                                    ),
-                                )).label('features') \
-                            ).select_from(ranged_set) \
-                            .group_by(ranged_set.c.colorRange) \
-                            .subquery().alias('rfeatures')
+            query_features = db.get_session() \
+                                .query(func.jsonb_build_object(
+                                    'type', 'Feature',
+                                    'geometry', func.ST_AsGeoJson(
+                                        func.ST_SimplifyPreserveTopology(func.ST_Union(func.array_agg(
+                                            func.ST_ReducePrecision(ranged_set.c.geometry, 1e-12)
+                                        )), 1e-12)
+                                    ).cast(JSON),
+                                    'properties', func.json_build_object(
+                                        'heightBase', case(
+                                            (ranged_set.c.colorRange < 0, NO_DATA_VALUE),
+                                            else_ = func.ceil(ranged_set.c.colorRange * range_div + min_height)
+                                        ),
+                                    )).label('features') \
+                                ).select_from(ranged_set) \
+                                .group_by(ranged_set.c.colorRange) \
+                                .subquery().alias('rfeatures')
 
-        # Return GeoJSON directly in PostGIS
-        query_final = db.get_session() \
-                            .query(func.jsonb_build_object(
-                                'type', 'FeatureCollection',
-                                'features', func.jsonb_agg(query_features.c.features))) \
-                            .select_from(query_features)
+            # Return GeoJSON directly in PostGIS
+            query_final = db.get_session() \
+                                .query(func.jsonb_build_object(
+                                    'type', 'FeatureCollection',
+                                    'features', func.jsonb_agg(query_features.c.features))) \
+                                .select_from(query_features)
 
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))

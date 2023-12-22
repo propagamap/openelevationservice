@@ -14,14 +14,18 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         super().__init__(*args, **kwargs)
 
     def PointElevation(self, request, context):
+        try:
             geom = convert.point_to_geometry([request.lon, request.lat])
             geom_queried = querybuilder.point_elevation(geom, 'point', 'srtm')
             geom_shaped = wkt.loads(geom_queried)
             point_3d = list(geom_shaped.coords[0])
             elevation = int(point_3d[2])
             return defs.Elevation(value=elevation)
+        except Exception as error:
+            context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
 
     def LineElevation(self, request, context):
+        try: 
             geom = convert.polyline_to_geometry([
                 [request.start.lon, request.start.lat],
                 [request.end.lon, request.end.lat]
@@ -38,6 +42,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 ))
 
             return defs.LineResponse(points=result)
+        except Exception as error:
+            context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
         
     def _format_area_request(self, request):
         min_lat = request.bottomLeft.lat
@@ -53,6 +59,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         ]
 
     def AreaPointsElevation(self, request, context):
+        try:
             geom = convert.polygon_to_geometry(self._format_area_request(request))
             geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
             geom_shaped = wkt.loads(geom_queried)
@@ -66,6 +73,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 ))
 
             return defs.AreaPointsResponse(points=result)
+        except Exception as error:
+            context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
     
     def _create_proto_geo_polygon(self, coordinates):
         return defs.Area(boundaries=[
@@ -78,6 +87,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         ])
 
     def AreaRangesElevation(self, request, context):
+        try:
             geom = convert.polygon_to_geometry(self._format_area_request(request))
             collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
             
@@ -102,6 +112,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 maxElevation=range_queried[1],
                 avgElevation=avg_queried,
             )
+        except Exception as error:
+            context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
 
 
 def grpc_serve(port_url):
