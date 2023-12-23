@@ -1,5 +1,6 @@
 from concurrent import futures
 from openelevationservice.server.api import querybuilder, views
+from openelevationservice.server.api.api_exceptions import InvalidUsage
 from openelevationservice.server.utils import convert
 import grpc
 from grpc_reflection.v1alpha import reflection
@@ -21,7 +22,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             point_3d = list(geom_shaped.coords[0])
             elevation = int(point_3d[2])
             return defs.Elevation(value=elevation)
-        except Exception as error:
+        except InvalidUsage as error:
             context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
 
     def LineElevation(self, request, context):
@@ -42,7 +43,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 ))
 
             return defs.LineResponse(points=result)
-        except Exception as error:
+        except InvalidUsage as error:
             context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
         
     def _format_area_request(self, request):
@@ -73,7 +74,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 ))
 
             return defs.AreaPointsResponse(points=result)
-        except Exception as error:
+        except InvalidUsage as error:
             context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
     
     def _create_proto_geo_polygon(self, coordinates):
@@ -112,7 +113,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 maxElevation=range_queried[1],
                 avgElevation=avg_queried,
             )
-        except Exception as error:
+        except InvalidUsage as error:
             context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
 
 
