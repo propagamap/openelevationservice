@@ -1,7 +1,7 @@
 {
   "name": "@propagamap/oes-grpc-ts",
   "description": "OpenElevationService gRPC definition for TypeScript client",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "main": "./node_dist/index.js",
   "types": "./node_dist/index.d.ts",
   "files": [
@@ -11,16 +11,14 @@
   "author": "liu-hanli <hanli.liu@edu.uah.es>",
   "license": "MIT",
   "scripts": {
-    "build": "buf generate --config ./node_buf_config/buf.yaml --template ./node_buf_config/buf.gen.linux.yaml && tsc",
-    "build:win": "buf generate --config ./node_buf_config/buf.yaml --template ./node_buf_config/buf.gen.win.yaml && tsc"
+    "__protoc": "grpc_tools_node_protoc",
+    "build": "node protoc_node.js ./proto/openelevationservice/server/grpc ./node_dist"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.9.10",
-    "google-protobuf": "^3.15.6"
+    "@grpc/grpc-js": "^1.9.13"
   },
   "devDependencies": {
-    "@types/google-protobuf": "^3.15.12",
-    "grpc-tools": "1.11.3",
+    "grpc-tools": "^1.12.4",
     "grpc_tools_node_protoc_ts": "^5.3.3"
   }
 }
