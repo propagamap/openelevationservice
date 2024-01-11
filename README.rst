@@ -125,19 +125,16 @@ Then you can set up the environment:
 
 .. code-block:: bash
 
-   cd openelevationservice
    # Either via virtualenv, venv package or conda
-   python3.6 -m venv .venv
+   python3 -m venv .venv
    # or
-   virtualenv python=python3.6 .venv
+   virtualenv -p python3 .venv
    # or
    conda create -n oes python=3.6
 
    # Activate virtual env (or equivalent conda command)
    source .venv/bin/activate
-   # Add FLASK_APP environment variable
-   # For conda, see here: https://conda.io/docs/user-guide/tasks/manage-environments.html#macos-and-linux
-   echo "export FLASK_APP=manage" >> .venv/bin/activate
+
    # Install required packages
    pip install -r requirements.txt
 
@@ -152,7 +149,9 @@ When your environment is set up, you can run the import process and start the se
    flask importdata
 
    # Start the server
-   flask run
+   flask --app manage run # HTTP mode
+   # or
+   python3 run_grpc_server.py # GRPC mode
 
 The service will now listen on ``http://localhost:5000``.
 
@@ -183,8 +182,10 @@ Steps to establish the environment and run the server:
    # - "psycopg2-binary==2.8.4" by "psycopg2-binary>=2.8.4"
    pip install -r requirements.txt
  
-   # Run the server
-   flask --app manage run
+   # Start the server
+   flask --app manage run # HTTP mode
+   # or
+   python run_grpc_server.py # GRPC mode
 
 Endpoints
 ----------------------------------------------------------
