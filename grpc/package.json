@@ -15,7 +15,7 @@
     "build": "node protoc_node.js ./proto/openelevationservice/server/grpc ./node_dist"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.9.13"
+    "@grpc/grpc-js": "^1.9.14"
   },
   "devDependencies": {
     "grpc-tools": "^1.12.4",
