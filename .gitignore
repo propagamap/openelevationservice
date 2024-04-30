@@ -1,6 +1,7 @@
 .idea/
 sql/
 run_travis.sh
+.env/
 .venv/
 .spyproject/
 *__pycache__/

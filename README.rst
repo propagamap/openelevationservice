@@ -172,8 +172,8 @@ Steps to establish the environment and run the server:
 .. code-block:: bash
 
    # Python virtual environment setup and activate
-   python -m venv .venv
-   cd .\.venv\Scripts
+   python -m venv .env
+   cd .\.env\Scripts
    .\activate
    cd ..\..
  
@@ -336,6 +336,3 @@ POST Polygon as geometry
 With the "format_out" as "geojson" or "polygon", the result will be simple multipoints with the elevation values as 3rd dimension in the coordinates.
 
 With the "format_out" as "colorpolygon", the result will be a feature collection (GeoJSON) with the grouped elevation values assigned as properties to geometries of polygon or multipolygon.
-
-- 23 base ranges of 43 meters (0-42, 43-85, 86-128, ..., 946-988)
-- All values greater than 988 as the last range.
