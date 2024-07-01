@@ -176,6 +176,7 @@ Steps to establish the environment and run the server:
    cd .\.env\Scripts
    .\activate
    cd ..\..
+   # & .env\Scripts\activate
  
    # Install required packages
    # If a sequence of errors occurs, in "requirements.txt", replace the last line:

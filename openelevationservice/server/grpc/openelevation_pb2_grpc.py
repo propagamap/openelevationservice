@@ -29,6 +29,11 @@ class OpenElevationStub(object):
                 request_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.SerializeToString,
                 response_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.FromString,
                 )
+        self.StretchedAreaElevation = channel.unary_unary(
+                '/propagamap.OpenElevation/StretchedAreaElevation',
+                request_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.StretchedAreaRequest.SerializeToString,
+                response_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.FromString,
+                )
         self.AreaRangesElevation = channel.unary_unary(
                 '/propagamap.OpenElevation/AreaRangesElevation',
                 request_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.SerializeToString,
@@ -57,6 +62,12 @@ class OpenElevationServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StretchedAreaElevation(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def AreaRangesElevation(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -79,6 +90,11 @@ def add_OpenElevationServicer_to_server(servicer, server):
             'AreaPointsElevation': grpc.unary_unary_rpc_method_handler(
                     servicer.AreaPointsElevation,
                     request_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.FromString,
+                    response_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.SerializeToString,
+            ),
+            'StretchedAreaElevation': grpc.unary_unary_rpc_method_handler(
+                    servicer.StretchedAreaElevation,
+                    request_deserializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.StretchedAreaRequest.FromString,
                     response_serializer=openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.SerializeToString,
             ),
             'AreaRangesElevation': grpc.unary_unary_rpc_method_handler(
@@ -143,6 +159,23 @@ class OpenElevation(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/propagamap.OpenElevation/AreaPointsElevation',
             openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaRequest.SerializeToString,
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def StretchedAreaElevation(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/propagamap.OpenElevation/StretchedAreaElevation',
+            openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.StretchedAreaRequest.SerializeToString,
             openelevationservice_dot_server_dot_grpc_dot_openelevation__pb2.AreaPointsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

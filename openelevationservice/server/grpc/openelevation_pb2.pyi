@@ -6,7 +6,7 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class LatLon(_message.Message):
-    __slots__ = ["lat", "lon"]
+    __slots__ = ("lat", "lon")
     LAT_FIELD_NUMBER: _ClassVar[int]
     LON_FIELD_NUMBER: _ClassVar[int]
     lat: float
@@ -14,13 +14,13 @@ class LatLon(_message.Message):
     def __init__(self, lat: _Optional[float] = ..., lon: _Optional[float] = ...) -> None: ...
 
 class Elevation(_message.Message):
-    __slots__ = ["value"]
+    __slots__ = ("value",)
     VALUE_FIELD_NUMBER: _ClassVar[int]
     value: int
     def __init__(self, value: _Optional[int] = ...) -> None: ...
 
 class LineRequest(_message.Message):
-    __slots__ = ["start", "end"]
+    __slots__ = ("start", "end")
     START_FIELD_NUMBER: _ClassVar[int]
     END_FIELD_NUMBER: _ClassVar[int]
     start: LatLon
@@ -28,7 +28,7 @@ class LineRequest(_message.Message):
     def __init__(self, start: _Optional[_Union[LatLon, _Mapping]] = ..., end: _Optional[_Union[LatLon, _Mapping]] = ...) -> None: ...
 
 class LatLonElevation(_message.Message):
-    __slots__ = ["lat", "lon", "elevation"]
+    __slots__ = ("lat", "lon", "elevation")
     LAT_FIELD_NUMBER: _ClassVar[int]
     LON_FIELD_NUMBER: _ClassVar[int]
     ELEVATION_FIELD_NUMBER: _ClassVar[int]
@@ -38,13 +38,13 @@ class LatLonElevation(_message.Message):
     def __init__(self, lat: _Optional[float] = ..., lon: _Optional[float] = ..., elevation: _Optional[int] = ...) -> None: ...
 
 class LineResponse(_message.Message):
-    __slots__ = ["points"]
+    __slots__ = ("points",)
     POINTS_FIELD_NUMBER: _ClassVar[int]
     points: _containers.RepeatedCompositeFieldContainer[LatLonElevation]
     def __init__(self, points: _Optional[_Iterable[_Union[LatLonElevation, _Mapping]]] = ...) -> None: ...
 
 class AreaRequest(_message.Message):
-    __slots__ = ["bottomLeft", "topRight"]
+    __slots__ = ("bottomLeft", "topRight")
     BOTTOMLEFT_FIELD_NUMBER: _ClassVar[int]
     TOPRIGHT_FIELD_NUMBER: _ClassVar[int]
     bottomLeft: LatLon
@@ -52,25 +52,35 @@ class AreaRequest(_message.Message):
     def __init__(self, bottomLeft: _Optional[_Union[LatLon, _Mapping]] = ..., topRight: _Optional[_Union[LatLon, _Mapping]] = ...) -> None: ...
 
 class AreaPointsResponse(_message.Message):
-    __slots__ = ["points"]
+    __slots__ = ("points",)
     POINTS_FIELD_NUMBER: _ClassVar[int]
     points: _containers.RepeatedCompositeFieldContainer[LatLonElevation]
     def __init__(self, points: _Optional[_Iterable[_Union[LatLonElevation, _Mapping]]] = ...) -> None: ...
 
+class StretchedAreaRequest(_message.Message):
+    __slots__ = ("bottomLeft", "topRight", "stretch")
+    BOTTOMLEFT_FIELD_NUMBER: _ClassVar[int]
+    TOPRIGHT_FIELD_NUMBER: _ClassVar[int]
+    STRETCH_FIELD_NUMBER: _ClassVar[int]
+    bottomLeft: LatLon
+    topRight: LatLon
+    stretch: LatLon
+    def __init__(self, bottomLeft: _Optional[_Union[LatLon, _Mapping]] = ..., topRight: _Optional[_Union[LatLon, _Mapping]] = ..., stretch: _Optional[_Union[LatLon, _Mapping]] = ...) -> None: ...
+
 class LineString(_message.Message):
-    __slots__ = ["points"]
+    __slots__ = ("points",)
     POINTS_FIELD_NUMBER: _ClassVar[int]
     points: _containers.RepeatedCompositeFieldContainer[LatLon]
     def __init__(self, points: _Optional[_Iterable[_Union[LatLon, _Mapping]]] = ...) -> None: ...
 
 class Area(_message.Message):
-    __slots__ = ["boundaries"]
+    __slots__ = ("boundaries",)
     BOUNDARIES_FIELD_NUMBER: _ClassVar[int]
     boundaries: _containers.RepeatedCompositeFieldContainer[LineString]
     def __init__(self, boundaries: _Optional[_Iterable[_Union[LineString, _Mapping]]] = ...) -> None: ...
 
 class UnitedArea(_message.Message):
-    __slots__ = ["baseElevation", "area"]
+    __slots__ = ("baseElevation", "area")
     BASEELEVATION_FIELD_NUMBER: _ClassVar[int]
     AREA_FIELD_NUMBER: _ClassVar[int]
     baseElevation: int
@@ -78,7 +88,7 @@ class UnitedArea(_message.Message):
     def __init__(self, baseElevation: _Optional[int] = ..., area: _Optional[_Union[Area, _Mapping]] = ...) -> None: ...
 
 class AreaRangesResponse(_message.Message):
-    __slots__ = ["unions", "minElevation", "maxElevation", "avgElevation"]
+    __slots__ = ("unions", "minElevation", "maxElevation", "avgElevation")
     UNIONS_FIELD_NUMBER: _ClassVar[int]
     MINELEVATION_FIELD_NUMBER: _ClassVar[int]
     MAXELEVATION_FIELD_NUMBER: _ClassVar[int]

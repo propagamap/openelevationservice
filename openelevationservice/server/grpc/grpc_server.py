@@ -2,6 +2,7 @@ from concurrent import futures
 from sqlalchemy.exc import SQLAlchemyError
 from openelevationservice.server.api import querybuilder, views
 from openelevationservice.server.api.api_exceptions import InvalidUsage
+from openelevationservice.server.grpc.direct_queries import stretched_area_elevation
 from openelevationservice.server.utils import convert
 import grpc
 from grpc_reflection.v1alpha import reflection
@@ -83,6 +84,16 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 elevation=int(point[2])
             ))
 
+        return defs.AreaPointsResponse(points=result)
+
+    @handle_exceptions
+    def StretchedAreaElevation(self, request, context):
+        botLeft = (request.bottomLeft.lon, request.bottomLeft.lat)
+        topRight = (request.topRight.lon, request.topRight.lat)
+        stretchPoint = (request.stretch.lon, request.stretch.lat)
+        geom = stretched_area_elevation(botLeft, topRight, stretchPoint)
+        
+        result = [defs.LatLonElevation(lon=p[0], lat=p[1], elevation=p[2]) for p in geom]
         return defs.AreaPointsResponse(points=result)
     
     def _create_proto_geo_polygon(self, coordinates):
