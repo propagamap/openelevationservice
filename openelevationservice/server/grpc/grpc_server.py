@@ -93,7 +93,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         stretchPoint = (request.stretch.lon, request.stretch.lat)
         geom = stretched_area_elevation(botLeft, topRight, stretchPoint)
         
-        result = [defs.LatLonElevation(lon=p[0], lat=p[1], elevation=p[2]) for p in geom]
+        result = [defs.LatLonElevation(lon=p[0], lat=p[1], elevation=int(p[2])) for p in geom]
         return defs.AreaPointsResponse(points=result)
     
     def _create_proto_geo_polygon(self, coordinates):
