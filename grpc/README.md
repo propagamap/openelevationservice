@@ -17,10 +17,35 @@ pip3 install grpcio-reflection
 
 ```bash
 # Linux
+python3 ./grpc/protoc_python.py
+
+# Windows
+python ./grpc/protoc_python.py
+```
+
+<!--
+```bash
+# Linux
 python3 -m grpc_tools.protoc -I ./grpc/proto --python_out=. --pyi_out=. --grpc_python_out=. ./grpc/proto/openelevationservice/server/grpc/openelevation.proto
 
 # Windows
 python -m grpc_tools.protoc -I ./grpc/proto --python_out=. --pyi_out=. --grpc_python_out=. ./grpc/proto/openelevationservice/server/grpc/openelevation.proto
+```
+-->
+
+## Generate Python client definitions
+
+Replace both arguments:
+
+- `[target_root]`: The directory of the main script of the client project.
+- `[target_path_under_root]`: The relative path to the main script where the generated definitions will be placed.
+
+```bash
+# Linux
+python3 ./grpc/protoc_python.py [target_root] [target_path_under_root]
+
+# Windows
+python ./grpc/protoc_python.py [target_root] [target_path_under_root]
 ```
 
 ## Generate Node.js client package

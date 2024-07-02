@@ -1,5 +1,6 @@
 .idea/
 sql/
+tmp/
 run_travis.sh
 .env/
 .venv/
@@ -25,4 +26,5 @@ build/
 # gRPC
 grpc/node_modules/
 grpc/node_dist/
+grpc/proto/oes_grpc/
 grpc/.npmrc
