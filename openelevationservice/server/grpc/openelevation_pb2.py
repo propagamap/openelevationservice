@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n4openelevationservice/server/grpc/openelevation.proto\x12\npropagamap\"\"\n\x06LatLon\x12\x0b\n\x03lat\x18\x01 \x01(\x01\x12\x0b\n\x03lon\x18\x02 \x01(\x01\"\x1a\n\tElevation\x12\r\n\x05value\x18\x01 \x01(\x05\"Q\n\x0bLineRequest\x12!\n\x05start\x18\x01 \x01(\x0b\x32\x12.propagamap.LatLon\x12\x1f\n\x03\x65nd\x18\x02 \x01(\x0b\x32\x12.propagamap.LatLon\">\n\x0fLatLonElevation\x12\x0b\n\x03lat\x18\x01 \x01(\x01\x12\x0b\n\x03lon\x18\x02 \x01(\x01\x12\x11\n\televation\x18\x03 \x01(\x05\";\n\x0cLineResponse\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.propagamap.LatLonElevation\"[\n\x0b\x41reaRequest\x12&\n\nbottomLeft\x18\x01 \x01(\x0b\x32\x12.propagamap.LatLon\x12$\n\x08topRight\x18\x02 \x01(\x0b\x32\x12.propagamap.LatLon\"A\n\x12\x41reaPointsResponse\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.propagamap.LatLonElevation\"\x89\x01\n\x14StretchedAreaRequest\x12&\n\nbottomLeft\x18\x01 \x01(\x0b\x32\x12.propagamap.LatLon\x12$\n\x08topRight\x18\x02 \x01(\x0b\x32\x12.propagamap.LatLon\x12#\n\x07stretch\x18\x03 \x01(\x0b\x32\x12.propagamap.LatLon\"0\n\nLineString\x12\"\n\x06points\x18\x01 \x03(\x0b\x32\x12.propagamap.LatLon\"2\n\x04\x41rea\x12*\n\nboundaries\x18\x01 \x03(\x0b\x32\x16.propagamap.LineString\"C\n\nUnitedArea\x12\x15\n\rbaseElevation\x18\x01 \x01(\x05\x12\x1e\n\x04\x61rea\x18\x02 \x01(\x0b\x32\x10.propagamap.Area\"~\n\x12\x41reaRangesResponse\x12&\n\x06unions\x18\x01 \x03(\x0b\x32\x16.propagamap.UnitedArea\x12\x14\n\x0cminElevation\x18\x02 \x01(\x05\x12\x14\n\x0cmaxElevation\x18\x03 \x01(\x05\x12\x14\n\x0c\x61vgElevation\x18\x04 \x01(\x02\x32\x8c\x03\n\rOpenElevation\x12;\n\x0ePointElevation\x12\x12.propagamap.LatLon\x1a\x15.propagamap.Elevation\x12\x42\n\rLineElevation\x12\x17.propagamap.LineRequest\x1a\x18.propagamap.LineResponse\x12N\n\x13\x41reaPointsElevation\x12\x17.propagamap.AreaRequest\x1a\x1e.propagamap.AreaPointsResponse\x12Z\n\x16StretchedAreaElevation\x12 .propagamap.StretchedAreaRequest\x1a\x1e.propagamap.AreaPointsResponse\x12N\n\x13\x41reaRangesElevation\x12\x17.propagamap.AreaRequest\x1a\x1e.propagamap.AreaRangesResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n4openelevationservice/server/grpc/openelevation.proto\x12\npropagamap\"\"\n\x06LatLon\x12\x0b\n\x03lat\x18\x01 \x01(\x01\x12\x0b\n\x03lon\x18\x02 \x01(\x01\"\x1a\n\tElevation\x12\r\n\x05value\x18\x01 \x01(\x05\"Q\n\x0bLineRequest\x12!\n\x05start\x18\x01 \x01(\x0b\x32\x12.propagamap.LatLon\x12\x1f\n\x03\x65nd\x18\x02 \x01(\x0b\x32\x12.propagamap.LatLon\">\n\x0fLatLonElevation\x12\x0b\n\x03lat\x18\x01 \x01(\x01\x12\x0b\n\x03lon\x18\x02 \x01(\x01\x12\x11\n\televation\x18\x03 \x01(\x05\";\n\x0cLineResponse\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.propagamap.LatLonElevation\"[\n\x0b\x41reaRequest\x12&\n\nbottomLeft\x18\x01 \x01(\x0b\x32\x12.propagamap.LatLon\x12$\n\x08topRight\x18\x02 \x01(\x0b\x32\x12.propagamap.LatLon\"A\n\x12\x41reaPointsResponse\x12+\n\x06points\x18\x01 \x03(\x0b\x32\x1b.propagamap.LatLonElevation\"\x89\x01\n\x14StretchedAreaRequest\x12&\n\nbottomLeft\x18\x01 \x01(\x0b\x32\x12.propagamap.LatLon\x12$\n\x08topRight\x18\x02 \x01(\x0b\x32\x12.propagamap.LatLon\x12#\n\x07stretch\x18\x03 \x01(\x0b\x32\x12.propagamap.LatLon\"\x8d\x01\n\x13\x45xtendedAreaRequest\x12&\n\nbottomLeft\x18\x01 \x01(\x0b\x32\x12.propagamap.LatLon\x12$\n\x08topRight\x18\x02 \x01(\x0b\x32\x12.propagamap.LatLon\x12(\n\x0c\x65xtendPoints\x18\x03 \x03(\x0b\x32\x12.propagamap.LatLon\"0\n\nLineString\x12\"\n\x06points\x18\x01 \x03(\x0b\x32\x12.propagamap.LatLon\"2\n\x04\x41rea\x12*\n\nboundaries\x18\x01 \x03(\x0b\x32\x16.propagamap.LineString\"C\n\nUnitedArea\x12\x15\n\rbaseElevation\x18\x01 \x01(\x05\x12\x1e\n\x04\x61rea\x18\x02 \x01(\x0b\x32\x10.propagamap.Area\"~\n\x12\x41reaRangesResponse\x12&\n\x06unions\x18\x01 \x03(\x0b\x32\x16.propagamap.UnitedArea\x12\x14\n\x0cminElevation\x18\x02 \x01(\x05\x12\x14\n\x0cmaxElevation\x18\x03 \x01(\x05\x12\x14\n\x0c\x61vgElevation\x18\x04 \x01(\x02\x32\xe6\x03\n\rOpenElevation\x12;\n\x0ePointElevation\x12\x12.propagamap.LatLon\x1a\x15.propagamap.Elevation\x12\x42\n\rLineElevation\x12\x17.propagamap.LineRequest\x1a\x18.propagamap.LineResponse\x12N\n\x13\x41reaPointsElevation\x12\x17.propagamap.AreaRequest\x1a\x1e.propagamap.AreaPointsResponse\x12Z\n\x16StretchedAreaElevation\x12 .propagamap.StretchedAreaRequest\x1a\x1e.propagamap.AreaPointsResponse\x12X\n\x15\x45xtendedAreaElevation\x12\x1f.propagamap.ExtendedAreaRequest\x1a\x1e.propagamap.AreaPointsResponse\x12N\n\x13\x41reaRangesElevation\x12\x17.propagamap.AreaRequest\x1a\x1e.propagamap.AreaRangesResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -37,14 +37,16 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_AREAPOINTSRESPONSE']._serialized_end=498
   _globals['_STRETCHEDAREAREQUEST']._serialized_start=501
   _globals['_STRETCHEDAREAREQUEST']._serialized_end=638
-  _globals['_LINESTRING']._serialized_start=640
-  _globals['_LINESTRING']._serialized_end=688
-  _globals['_AREA']._serialized_start=690
-  _globals['_AREA']._serialized_end=740
-  _globals['_UNITEDAREA']._serialized_start=742
-  _globals['_UNITEDAREA']._serialized_end=809
-  _globals['_AREARANGESRESPONSE']._serialized_start=811
-  _globals['_AREARANGESRESPONSE']._serialized_end=937
-  _globals['_OPENELEVATION']._serialized_start=940
-  _globals['_OPENELEVATION']._serialized_end=1336
+  _globals['_EXTENDEDAREAREQUEST']._serialized_start=641
+  _globals['_EXTENDEDAREAREQUEST']._serialized_end=782
+  _globals['_LINESTRING']._serialized_start=784
+  _globals['_LINESTRING']._serialized_end=832
+  _globals['_AREA']._serialized_start=834
+  _globals['_AREA']._serialized_end=884
+  _globals['_UNITEDAREA']._serialized_start=886
+  _globals['_UNITEDAREA']._serialized_end=953
+  _globals['_AREARANGESRESPONSE']._serialized_start=955
+  _globals['_AREARANGESRESPONSE']._serialized_end=1081
+  _globals['_OPENELEVATION']._serialized_start=1084
+  _globals['_OPENELEVATION']._serialized_end=1570
 # @@protoc_insertion_point(module_scope)

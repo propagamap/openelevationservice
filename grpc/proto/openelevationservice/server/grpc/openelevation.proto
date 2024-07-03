@@ -41,6 +41,12 @@ message StretchedAreaRequest {
   LatLon stretch = 3;
 }
 
+message ExtendedAreaRequest {
+  LatLon bottomLeft = 1;
+  LatLon topRight = 2;
+  repeated LatLon extendPoints = 3;
+}
+
 message LineString {
   repeated LatLon points = 1;
 }
@@ -66,5 +72,6 @@ service OpenElevation {
   rpc LineElevation(LineRequest) returns (LineResponse);
   rpc AreaPointsElevation(AreaRequest) returns (AreaPointsResponse);
   rpc StretchedAreaElevation(StretchedAreaRequest) returns (AreaPointsResponse);
+  rpc ExtendedAreaElevation(ExtendedAreaRequest) returns (AreaPointsResponse);
   rpc AreaRangesElevation(AreaRequest) returns (AreaRangesResponse);
 }

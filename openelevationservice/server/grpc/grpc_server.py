@@ -2,7 +2,7 @@ from concurrent import futures
 from sqlalchemy.exc import SQLAlchemyError
 from openelevationservice.server.api import querybuilder, views
 from openelevationservice.server.api.api_exceptions import InvalidUsage
-from openelevationservice.server.grpc.direct_queries import stretched_area_elevation
+from openelevationservice.server.grpc.direct_queries import extended_area_elevation, stretched_area_elevation
 from openelevationservice.server.utils import convert
 import grpc
 from grpc_reflection.v1alpha import reflection
@@ -88,11 +88,21 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     @handle_exceptions
     def StretchedAreaElevation(self, request, context):
-        botLeft = (request.bottomLeft.lon, request.bottomLeft.lat)
-        topRight = (request.topRight.lon, request.topRight.lat)
-        stretchPoint = (request.stretch.lon, request.stretch.lat)
-        geom = stretched_area_elevation(botLeft, topRight, stretchPoint)
+        bot_left = (request.bottomLeft.lon, request.bottomLeft.lat)
+        top_right = (request.topRight.lon, request.topRight.lat)
+        stretch_point = (request.stretch.lon, request.stretch.lat)
+        geom = stretched_area_elevation(bot_left, top_right, stretch_point)
         
+        result = [defs.LatLonElevation(lon=p[0], lat=p[1], elevation=int(p[2])) for p in geom]
+        return defs.AreaPointsResponse(points=result)
+    
+    @handle_exceptions
+    def ExtendedAreaElevation(self, request, context):
+        bot_left = (request.bottomLeft.lon, request.bottomLeft.lat)
+        top_right = (request.topRight.lon, request.topRight.lat)
+        extend_points = [(point.lon, point.lat) for point in request.extendPoints]
+        geom = extended_area_elevation(bot_left, top_right, extend_points)
+
         result = [defs.LatLonElevation(lon=p[0], lat=p[1], elevation=int(p[2])) for p in geom]
         return defs.AreaPointsResponse(points=result)
     
@@ -144,20 +154,6 @@ def grpc_serve(port_url):
     )
 
     reflection.enable_server_reflection(SERVICE_NAMES, server)
-    
-    # TODO: use correct credentials if needed
-    # if '-s' in sys.argv[1:]:
-    #     privkey = open('./test_ssl/test_key.pem', 'rb').read()
-    #     certchain = open('./test_ssl/test_cert.pem', 'rb').read()
-    #     server.add_secure_port(
-    #         port_url,
-    #         grpc.ssl_server_credentials(
-    #             ((privkey, certchain), ),
-    #             # root_certificates=None,
-    #             # require_client_auth=False
-    #         )
-    #     )
-    # else:
     server.add_insecure_port(port_url)
 
     server.start()

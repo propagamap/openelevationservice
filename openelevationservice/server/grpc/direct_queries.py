@@ -5,7 +5,15 @@ from sqlalchemy import text
 TILES_PER_DEGREE = 1200
 
 
-ELEVATION_AREA_FORMAT = text(
+def format_area(
+    bot_left: Tuple[float, float], top_right: Tuple[float, float]
+) -> List[Tuple[float, float]]:
+    [lft, bot] = bot_left
+    [rgt, top] = top_right
+    return [(lft, bot), (rgt, bot), (rgt, top), (lft, top), (lft, bot)]
+
+
+ELEVATION_AREA_STATEMENT = text(
     """
   WITH query_geom AS (
 	SELECT ST_SetSRID(ST_MakePolygon(
@@ -33,10 +41,12 @@ def area_elevation(
     coordinates = ", ".join(f"{lon} {lat}" for lon, lat in geometry)
     polygon = f"LINESTRING({coordinates})"
 
-    return db.get_session().execute(ELEVATION_AREA_FORMAT, {"polygon": polygon}).all()
+    return (
+        db.get_session().execute(ELEVATION_AREA_STATEMENT, {"polygon": polygon}).all()
+    )
 
 
-ELEVATION_UNION_FORMAT = text(
+ELEVATION_UNION_STATEMENT = text(
     """
 WITH query_geom AS (
 	SELECT ST_SetSRID(ST_MakePolygon(
@@ -76,11 +86,13 @@ def polygon_coloring_elevation(
     polygon = f"LINESTRING({coordinates})"
 
     return (
-        db.get_session().execute(ELEVATION_UNION_FORMAT, {"polygon": polygon}).scalar()
+        db.get_session()
+        .execute(ELEVATION_UNION_STATEMENT, {"polygon": polygon})
+        .scalar()
     )
 
 
-STRETCHED_AREA_FORMAT = text(
+STRETCHED_AREA_STATEMENT = text(
     """
 WITH query_geom AS (
     SELECT ST_SetSRID(ST_MakePolygon(
@@ -104,13 +116,13 @@ FROM tiles
 
 
 def format_stretch_area(
-    botLeft: Tuple[float, float],
-    topRight: Tuple[float, float],
-    stretchPoint: Tuple[float, float],
+    bot_left: Tuple[float, float],
+    top_right: Tuple[float, float],
+    stretch_point: Tuple[float, float],
 ) -> List[Tuple[float, float]]:
-    [lft, bot] = botLeft
-    [rgt, top] = topRight
-    [lon, lat] = stretchPoint
+    [lft, bot] = bot_left
+    [rgt, top] = top_right
+    [lon, lat] = stretch_point
 
     if lon < lft:
         if lat < bot:
@@ -148,12 +160,65 @@ def format_stretch_area(
 
 
 def stretched_area_elevation(
-    botLeft: Tuple[float, float],
-    topRight: Tuple[float, float],
-    stretchPoint: Tuple[float, float],
+    bot_left: Tuple[float, float],
+    top_right: Tuple[float, float],
+    stretch_point: Tuple[float, float],
 ) -> List[Tuple[float, float, float]]:
-    geometry = format_stretch_area(botLeft, topRight, stretchPoint)
+    geometry = format_stretch_area(bot_left, top_right, stretch_point)
     coordinates = ", ".join(f"{lon} {lat}" for lon, lat in geometry)
     polygon = f"LINESTRING({coordinates})"
 
-    return db.get_session().execute(STRETCHED_AREA_FORMAT, {"polygon": polygon}).all()
+    return (
+        db.get_session().execute(STRETCHED_AREA_STATEMENT, {"polygon": polygon}).all()
+    )
+
+
+EXTENDED_AREA_FORMAT = """
+WITH query_geom AS (
+    SELECT ST_SetSRID(ST_Union(
+        ARRAY[{formatted_params}]
+    ), 4326) AS geom
+),
+tiles AS (
+    SELECT ST_PointN(ST_ExteriorRing(tr.geom), 1) AS top_left, val
+    FROM (
+        SELECT DISTINCT (ST_PixelAsPolygons(
+            oes_cgiar.rast,
+            1, False
+        )).*
+        FROM query_geom INNER JOIN oes_cgiar ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
+    ) AS tr JOIN query_geom ON ST_Intersects(tr.geom, query_geom.geom)
+)
+SELECT ST_X(top_left), ST_Y(top_left), val
+FROM tiles
+"""
+
+
+def extended_area_elevation(
+    bot_left: Tuple[float, float],
+    top_right: Tuple[float, float],
+    extend_points: List[Tuple[float, float]],
+) -> List[Tuple[float, float, float]]:
+
+    if len(extend_points) == 0:
+        geometry = format_area(bot_left, top_right)
+        coordinates = ", ".join(f"{lon} {lat}" for lon, lat in geometry)
+        polygon = f"LINESTRING({coordinates})"
+        return (
+            db.get_session()
+            .execute(STRETCHED_AREA_STATEMENT, {"polygon": polygon})
+            .all()
+        )
+
+    formatted_params = ", ".join(
+        f"ST_GeomFromText(:polygon{i})" for i in range(len(extend_points))
+    )
+    statement = text(EXTENDED_AREA_FORMAT.format(formatted_params=formatted_params))
+
+    params = {}
+    for i, point in enumerate(extend_points):
+        geometry = format_stretch_area(bot_left, top_right, point)
+        coordinates = ", ".join(f"{lon} {lat}" for lon, lat in geometry)
+        params[f"polygon{i}"] = f"POLYGON(({coordinates}))"
+
+    return db.get_session().execute(statement, params).all()

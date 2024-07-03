@@ -67,6 +67,16 @@ class StretchedAreaRequest(_message.Message):
     stretch: LatLon
     def __init__(self, bottomLeft: _Optional[_Union[LatLon, _Mapping]] = ..., topRight: _Optional[_Union[LatLon, _Mapping]] = ..., stretch: _Optional[_Union[LatLon, _Mapping]] = ...) -> None: ...
 
+class ExtendedAreaRequest(_message.Message):
+    __slots__ = ("bottomLeft", "topRight", "extendPoints")
+    BOTTOMLEFT_FIELD_NUMBER: _ClassVar[int]
+    TOPRIGHT_FIELD_NUMBER: _ClassVar[int]
+    EXTENDPOINTS_FIELD_NUMBER: _ClassVar[int]
+    bottomLeft: LatLon
+    topRight: LatLon
+    extendPoints: _containers.RepeatedCompositeFieldContainer[LatLon]
+    def __init__(self, bottomLeft: _Optional[_Union[LatLon, _Mapping]] = ..., topRight: _Optional[_Union[LatLon, _Mapping]] = ..., extendPoints: _Optional[_Iterable[_Union[LatLon, _Mapping]]] = ...) -> None: ...
+
 class LineString(_message.Message):
     __slots__ = ("points",)
     POINTS_FIELD_NUMBER: _ClassVar[int]

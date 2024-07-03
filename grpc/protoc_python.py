@@ -15,14 +15,14 @@ def generate_grpc(project_root=None, proto_infix_path=None) -> None:
 
     proto_dir = os.path.join(PROTO_ROOT, proto_infix_path)
     proto_target = os.path.join(proto_dir, PROTO_FILE)
+    target_exists = os.path.exists(proto_target)
 
-    if not os.path.exists(proto_target):
+    if not target_exists:
         original_proto = os.path.join(PROTO_ROOT, PROTO_INFIX_PATH, PROTO_FILE)
-
         os.makedirs(proto_dir, exist_ok=True)
         shutil.copyfile(original_proto, proto_target)
 
-    return protoc.main(
+    status = protoc.main(
         (
             "",
             f"--proto_path={PROTO_ROOT}",
@@ -32,6 +32,11 @@ def generate_grpc(project_root=None, proto_infix_path=None) -> None:
             proto_target,
         )
     )
+
+    if not target_exists:
+        os.remove(proto_target)
+
+    return status
 
 
 if __name__ == "__main__":
