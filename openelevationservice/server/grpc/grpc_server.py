@@ -8,6 +8,10 @@ from grpc_reflection.v1alpha import reflection
 from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
+from openelevationservice.server.api import direct_queries_hanli
+
+#AAOR: importo time para medir el tiempo
+import time
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
@@ -30,11 +34,35 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     @handle_exceptions
     def PointElevation(self, request, context):
+        inicio_todo = time.perf_counter() #AAOR
+        print('Comentario AAOR_1',request)
+        print('Comentario AAOR_1_T',type(request))
+
         geom = convert.point_to_geometry([request.lon, request.lat])
+        print('Comentario AAOR_2',geom)
+        print('Comentario AAOR_2_T',type(geom))
+
         geom_queried = querybuilder.point_elevation(geom, 'point', 'srtm')
+        
+        print('Comentario AAOR_3',geom_queried)
+        print('Comentario AAOR_3_T',type(geom_queried))
+
         geom_shaped = wkt.loads(geom_queried)
+        print('Comentario AAOR_4',geom_shaped)
+        print('Comentario AAOR_4_T',type(geom_shaped))
+
         point_3d = list(geom_shaped.coords[0])
+        print('Comentario AAOR_5',point_3d)
+        print('Comentario AAOR_5_T',type(point_3d))
+
         elevation = int(point_3d[2])
+        print('Comentario AAOR_6',elevation)
+        print('Comentario AAOR_6_T',type(elevation))
+
+        fin_todo = time.perf_counter()#AAOR
+        tiempo_transcurrido_todo = fin_todo - inicio_todo#AAOR
+        print(f"Tiempo de ejecución_todooooooooo: {tiempo_transcurrido_todo:.6f} segundos")#AAOR
+
         return defs.Elevation(value=elevation)
 
     @handle_exceptions
@@ -71,10 +99,50 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
+        #AAOR-hanli
+        #hanli=direct_queries_hanli.main()
+        #print('gooooooooooooooooooooooooooo',hanli)
+        #AAOPR-Fin hanli
+        #AAOR
+        inicio_todo = time.perf_counter() 
+        print('Comentario AAOR_1',request)
+        print('Comentario AAOR_1_T',type(request))
+
+        inicio_convert = time.perf_counter() #AAOR
         geom = convert.polygon_to_geometry(self._format_area_request(request))
+        print('Comentario AAOR_1 geom',type(geom))
+        print('Comentario AAOR_1 geom',geom)
+        fin_convert = time.perf_counter() #AAOR
+
+
+
+        inicio_queried = time.perf_counter() #AAOR
         geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
+        #geom_queried = querybuilder.polygon_elevation_ref(geom, 'polygon', 'srtm')
+        #geom_queried = querybuilder.polygon_elevation__(geom, 'polygon', 'srtm')
+        fin_queried = time.perf_counter() #AAOR
+
+        inicio_shaped = time.perf_counter() #AAOR
         geom_shaped = wkt.loads(geom_queried)
+        fin_shaped = time.perf_counter() #AAOR
+
+
+
+
+        #inicio_queried_ref = time.perf_counter() #AAOR
+        #geom_queried_ref= querybuilder.polygon_elevation_to_getModel(geom, 'polygon', 'srtm')
+        #geom_queried_ref= querybuilder.polygon_elevation_optimizada(geom, 'polygon', 'srtm')
+        #geom_queried_ref= querybuilder.polygon_elevation_ref(geom, 'polygon', 'srtm')
+        #geom_queried_ref= querybuilder.polygon_elevation_ref_sin_mt(geom, 'polygon', 'srtm')
+        #fin_queried_ref = time.perf_counter() #AAOR
+
+        #inicio_shaped_ref = time.perf_counter() #AAOR
+        #geom_shaped_ref = wkt.loads(geom_queried_ref)
+        #fin_shaped_ref = time.perf_counter() #AAOR
+
         
+        
+        inicio_result = time.perf_counter() #AAOR
         result = []
         for point in list(geom_shaped.coords):
             result.append(defs.LatLonElevation(
@@ -82,7 +150,28 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 lat=point[1],
                 elevation=int(point[2])
             ))
+        fin_result = time.perf_counter() #AAOR
 
+
+        fin_todo = time.perf_counter()#AAOR
+
+        tiempo_transcurrido_todo = fin_todo - inicio_todo#AAOR
+        tiempo_transcurrido_convert = fin_convert - inicio_convert#AAOR
+        tiempo_transcurrido_queried = fin_queried - inicio_queried#AAOR
+        #tiempo_transcurrido_queried_ref = fin_queried_ref - inicio_queried_ref#AAOR
+        tiempo_transcurrido_shaped = fin_shaped - inicio_shaped#AAOR
+        #tiempo_transcurrido_shaped_ref = fin_shaped_ref - inicio_shaped_ref#AAOR
+        tiempo_transcurrido_result = fin_result - inicio_result#AAOR
+        print('\n')#AAOR
+        print(f"Tiempo de ejecución_todooooooooo: {tiempo_transcurrido_todo:.6f} segundos")#AAOR
+        print(f"Tiempo de ejecución_convert: {tiempo_transcurrido_convert:.6f} segundos")#AAOR
+        print(f"Tiempo de ejecución_queried: {tiempo_transcurrido_queried:.6f} segundos")#AAOR
+        #print(f"Tiempo de ejecución_queried_ref: {tiempo_transcurrido_queried_ref:.6f} segundos")#AAOR
+        print(f"Tiempo de ejecución_shaped: {tiempo_transcurrido_shaped:.6f} segundos")#AAOR
+        #print(f"Tiempo de ejecución_shaped_ref: {tiempo_transcurrido_shaped_ref:.6f} segundos")#AAOR
+        print(f"Tiempo de ejecución_result: {tiempo_transcurrido_result:.6f} segundos")#AAOR
+        print(f"Retardo del proceso sin el queried: {tiempo_transcurrido_todo - tiempo_transcurrido_queried:.6f} segundos")#AAOR
+              
         return defs.AreaPointsResponse(points=result)
     
     def _create_proto_geo_polygon(self, coordinates):
@@ -123,14 +212,19 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         )
 
 def grpc_serve(port_url):
+    print('Comentario AAOR: Entre aqui')
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     openelevation_pb2_grpc.add_OpenElevationServicer_to_server(
         OpenElevationServicer(), server)
+    
+    
         
     SERVICE_NAMES = (
         defs.DESCRIPTOR.services_by_name['OpenElevation'].full_name,
         reflection.SERVICE_NAME,
     )
+
+   
 
     reflection.enable_server_reflection(SERVICE_NAMES, server)
     

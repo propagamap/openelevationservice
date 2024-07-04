@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from openelevationservice import SETTINGS
-from openelevationservice.server.api import api_exceptions
+from openelevationservice.server.api import api_exceptions, querybuilder
 from openelevationservice.server.utils import logger, convert, codec
-from openelevationservice.server.api import querybuilder, validator
+from openelevationservice.server.api import validator
 from openelevationservice.server.api.response import ResponseBuilder
 
 from shapely import wkt

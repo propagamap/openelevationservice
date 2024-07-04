@@ -435,7 +435,7 @@ def polygon_elevation(geometry, format_out, dataset):
     :rtype: string
     """
     
-    #Model = _getModel(dataset)
+    Model = _getModel(dataset)
     
     if geometry.geom_type == 'Polygon':
 
@@ -444,148 +444,32 @@ def polygon_elevation(geometry, format_out, dataset):
 
         inicio_qgeom = time.perf_counter() #AAOR
         
-        #-------
-
-        # Consulta SQL para obtener los puntos y alturas dentro del polígono
-        # consulta_sql = """
-        #     WITH polygon_geom AS (
-        #         SELECT ST_SetSRID(
-        #                 ST_GeomFromText(:wkt_poligono), 4326
-        #             ) AS polygon
-        #     )
-        #     SELECT 
-        #         ST_X(geom) AS x,
-        #         ST_Y(geom) AS y,
-        #         ST_Value(rast, 1, geom) AS z
-        #     FROM oes_cgiar, polygon_geom,
-        #     LATERAL ST_PixelAsCentroids(
-        #         ST_Clip(rast, polygon_geom.polygon), 1
-        #     ) AS geom
-        #     WHERE ST_Intersects(rast, polygon_geom.polygon)
-        #     ORDER BY ST_X(geom), ST_Y(geom)
-        # """
-
-        # consulta_sql = """
-        #     WITH geom_polygon AS (
-        #         SELECT ST_SetSRID(
-        #             ST_GeomFromText(:wkt_poligono), 4326
-        #             ) AS geom
-        #     ),
-        #     intersecting_rasters AS (
-        #         SELECT r.rast, gp.geom
-        #         FROM cgiar_data r, geom_polygon gp
-        #         WHERE ST_Intersects(r.rast, gp.geom)
-        #     ),
-        #     clipped_rasters AS (
-        #         SELECT ST_Clip(ir.rast, ir.geom) AS clipped_rast
-        #         FROM intersecting_rasters ir
-        #     ),
-        #     pixel_geometries AS (
-        #         SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
-        #         FROM clipped_rasters cr
-        #     )
-        #     SELECT 
-        #         ST_X(pg.pixel_geom) AS longitud,
-        #         ST_Y(pg.pixel_geom) AS latitud,
-        #         pg.pixel_value AS altura
-        #     FROM pixel_geometries pg, geom_polygon gp
-        #     WHERE ST_Covers(gp.geom, pg.pixel_geom);
-        # """
-
-        # consulta_sql = """
-        #     WITH polygon_geom AS (
-        #         SELECT ST_SetSRID(
-        #                 ST_GeomFromText(:wkt_poligono), 4326
-        #             ) AS polygon
-        #     ),
-        #     intersecting_rasters AS (
-        #         SELECT r.rast, pg.polygon
-        #         FROM cgiar_data r, polygon_geom pg
-        #         WHERE ST_Intersects(r.rast, pg.polygon)
-        #     ),
-        #     clipped_rasters AS (
-        #         SELECT ST_Clip(ir.rast, ir.polygon) AS clipped_rast
-        #         FROM intersecting_rasters ir
-        #     ),
-        #     pixel_geometries AS (
-        #         SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
-        #         FROM clipped_rasters cr
-        #     )
-        #     SELECT 
-        #         ST_X(pg.pixel_geom) AS x,
-        #         ST_Y(pg.pixel_geom) AS y,
-        #         pg.pixel_value AS z
-        #     FROM pixel_geometries pg, polygon_geom pg_geom
-        #     WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom)
-        #     ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);
-        # """
-
-        consulta_sql = """
-            WITH polygon_geom AS (
-                SELECT ST_SetSRID(
-                        ST_GeomFromText(:wkt_poligono), 4326
-                    ) AS polygon
-            ),
-            intersecting_rasters AS (
-                SELECT r.rast, pg.polygon
-                FROM oes_cgiar r, polygon_geom pg
-                WHERE ST_Intersects(r.rast, pg.polygon)
-            ),
-            clipped_rasters AS (
-                SELECT ST_Clip(ir.rast, ir.polygon) AS clipped_rast
-                FROM intersecting_rasters ir
-            ),
-            pixel_geometries AS (
-                SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
-                FROM clipped_rasters cr
-            )
-            SELECT 
-                ST_X(pg.pixel_geom) AS x,
-                ST_Y(pg.pixel_geom) AS y,
-                pg.pixel_value AS z
-            FROM pixel_geometries pg, polygon_geom pg_geom
-            WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom);
-        """
-        #ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);-->medir tiempo con order by y sin order by
-
-
-        def ejecutar_consulta(geometry):
-            # Ejecutar la consulta SQL con el WKT del polígono proporcionado
-            result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
-            print('result_pointsssssss',result_points)
-
-            # Construir la LINESTRING Z
-            linestring_z = "LINESTRING Z ("
-            for point in result_points:
-                x = point.x
-                y = point.y
-                z = point.z
-                linestring_z += f"{x} {y} {z},"
-            
-            # Eliminar la última coma y cerrar el paréntesis
-            if linestring_z.endswith(','):
-                linestring_z = linestring_z[:-1] + ")"
-
-            return linestring_z
-            
-           
+        query_geom = session \
+                            .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
+                            .label('geom')) \
+                            .subquery().alias('pGeom')
         
-
-        # Ejecutar la consulta con la geometría proporcionada
-        result_geom=ejecutar_consulta(geometry)
-
-
-
-
-        #-------
+        result_pixels = session \
+                            .query(func.DISTINCT(func.ST_PixelAsCentroids(
+                                func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
+                                1, False))) \
+                            .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
+                            .all()
+        
+        print(result_pixels)
+        
         fin_qgeom = time.perf_counter() #AAOR
-
-
 
         tiempo_transcurrido_qgeom = fin_qgeom - inicio_qgeom#AAOR
         print(f"Tiempo de ejecución_qgeom: {tiempo_transcurrido_qgeom:.6f} segundos")#AAOR
        
-        
+        inicio_rgeom = time.perf_counter() #AAOR
+        #AAOR
+        result_geom=process_coordinates(result_pixels)
+        #AAOR
+        fin_rgeom = time.perf_counter() #AAOR
+        tiempo_transcurrido_rgeom = fin_rgeom - inicio_rgeom#AAOR
+        print(f"Tiempo de ejecución_rgeom: {tiempo_transcurrido_rgeom:.6f} segundos")#AAOR
         
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
@@ -595,8 +479,8 @@ def polygon_elevation(geometry, format_out, dataset):
     if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
-    print('----------- ')
-    print('cooooon mejoras sql lllll-ooooooooootraaaaaaaaaaaaaa')
+    print('-----------')
+    print('cooooon mejoras orm mmm')
         
     return result_geom
 #OJO
