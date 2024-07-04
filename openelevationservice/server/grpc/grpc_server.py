@@ -118,12 +118,17 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
         inicio_queried = time.perf_counter() #AAOR
         geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
+        print('geom_queried',type(geom_queried))
+        print('geom_queried',geom_queried[0:160])
         #geom_queried = querybuilder.polygon_elevation_ref(geom, 'polygon', 'srtm')
         #geom_queried = querybuilder.polygon_elevation__(geom, 'polygon', 'srtm')
         fin_queried = time.perf_counter() #AAOR
 
         inicio_shaped = time.perf_counter() #AAOR
         geom_shaped = wkt.loads(geom_queried)
+        print('geom_queried',type(geom_shaped.coords))
+        print('geom_queried',geom_shaped.coords[0], geom_shaped.coords[1],geom_shaped.coords[2],geom_shaped.coords[3])
+        #print('geom_queried',geom_shaped)
         fin_shaped = time.perf_counter() #AAOR
 
 
@@ -171,7 +176,10 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         #print(f"Tiempo de ejecución_shaped_ref: {tiempo_transcurrido_shaped_ref:.6f} segundos")#AAOR
         print(f"Tiempo de ejecución_result: {tiempo_transcurrido_result:.6f} segundos")#AAOR
         print(f"Retardo del proceso sin el queried: {tiempo_transcurrido_todo - tiempo_transcurrido_queried:.6f} segundos")#AAOR
-              
+
+        print('lo que se retorna finalmente')
+        print('result',type(result))
+        print('result',result[0])  
         return defs.AreaPointsResponse(points=result)
     
     def _create_proto_geo_polygon(self, coordinates):

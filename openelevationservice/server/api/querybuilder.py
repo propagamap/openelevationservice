@@ -552,7 +552,9 @@ def polygon_elevation(geometry, format_out, dataset):
         def ejecutar_consulta(geometry):
             # Ejecutar la consulta SQL con el WKT del polígono proporcionado
             result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
-            print('result_pointsssssss',result_points)
+            print('lo que llega desde la BBDD')
+            print('result_points',type(result_points))
+            print('result_pointsssssss',result_points[0],result_points[1],result_points[2],result_points[3])
 
             # Construir la LINESTRING Z
             linestring_z = "LINESTRING Z ("
@@ -565,6 +567,9 @@ def polygon_elevation(geometry, format_out, dataset):
             # Eliminar la última coma y cerrar el paréntesis
             if linestring_z.endswith(','):
                 linestring_z = linestring_z[:-1] + ")"
+
+            print('linestring_z',type(linestring_z))
+            print('linestring_z',linestring_z[0:160])
 
             return linestring_z
             
