@@ -243,7 +243,7 @@ def polygon_coloring_elevation(geometry, dataset):
 
 
 #OJO 
-#AAOR-->poligon_elevation optimizada-->(1)-->De las primeras optimas
+#AAOR-->poligon_elevation optimizada-->la polygon_elevation_ref trabaja mejor
 def polygon_elevation_optimizada(geometry, format_out, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
@@ -323,9 +323,100 @@ def polygon_elevation_optimizada(geometry, format_out, dataset):
     return result_geom
 #AAOR-->Fin poligon_elevation optimizada
 
+#AAOR-->Función process_coordinates
+def process_coordinates(result_pixels):
+    """
+    Procesa una lista de resultados y devuelve una cadena que representa un LINESTRING Z
+    y el objeto LineString de Shapely con las coordenadas de longitud, latitud y altura válidas.
+
+    :param result_pixels: Lista de tuplas, donde cada tupla contiene una cadena con datos WKB y altura.
+    :return: Una cadena que representa un LINESTRING Z y el objeto LineString de Shapely.
+    """
+    coordinates = []
+
+    # Procesar cada resultado
+    for entry in result_pixels:
+        # Separar los componentes de la cadena
+        raw_data = entry[0].strip('()').split(',')
+        
+        # Extraer el WKB, convertir a entero la altura y validar
+        hex_wkb = raw_data[0]
+        height = int(raw_data[1])
+        
+        if height != -32768:  # Filtrar alturas no válidas
+            # Convertir el WKB hexadecimal a un objeto de geometría de Shapely
+            geom = wkb.loads(bytes.fromhex(hex_wkb))
+            
+            # Obtener las coordenadas de longitud (X) y latitud (Y)
+            longitude, latitude = geom.x, geom.y
+            
+            # Almacenar las coordenadas y la altura válidas en la lista
+            coordinates.append((longitude, latitude, height))
+
+    # Crear el objeto LineString Z con las coordenadas válidas
+    linestring_z = geometry.LineString(coordinates)
+
+    # Retornar la cadena y el objeto LineString
+    return linestring_z.wkt
+
+
+def process_coordinates_(result_pixels):
+    """
+    Procesa una lista de resultados y devuelve una cadena que representa un LINESTRING Z
+    y el objeto LineString de Shapely con las coordenadas de longitud, latitud y altura válidas.
+
+    :param result_pixels: Lista de tuplas, donde cada tupla contiene una cadena con datos WKB y altura.
+    :return: Una cadena que representa un LINESTRING Z y el objeto LineString de Shapely.
+    """
+    coordinates = []
+
+    # Iniciar temporizador para medir el tiempo de ejecución
+    start_time = time.perf_counter()
+
+    # Procesar cada resultado
+    for entry in result_pixels:
+        # Separar los componentes de la cadena
+        raw_data = entry[0].strip('()').split(',')
+        
+        # Extraer el WKB, convertir a entero la altura y validar
+        hex_wkb = raw_data[0]
+        height = int(raw_data[1])
+        
+        if height != -32768:  # Filtrar alturas no válidas
+            # Convertir el WKB hexadecimal a un objeto de geometría de Shapely
+            geom = wkb.loads(bytes.fromhex(hex_wkb))
+            
+            # Obtener las coordenadas de longitud (X) y latitud (Y)
+            longitude, latitude = geom.x, geom.y
+            
+            # Almacenar las coordenadas y la altura válidas en la lista
+            coordinates.append((longitude, latitude, height))
+
+    # Crear el objeto LineString Z con las coordenadas válidas
+    linestring_z = geometry.LineString(coordinates)
+
+    # Terminar temporizador para medir el tiempo de ejecución
+    end_time = time.perf_counter()
+    print(f"Tiempo de ejecución de process_coordinates_: {end_time - start_time:.6f} segundos")
+    
+    # Limpiar referencias explícitamente
+    del coordinates, result_pixels
+    
+    # Forzar la recolección de basura para liberar memoria
+    gc.collect()
+
+    # Retornar la representación WKT del objeto LineString
+    return linestring_z.wkt
+
+
+
+#Fin AAOR-->Función process_coordinates
+
+
+
 #OJO
-#AAOR-->poligon_elevation sql-varias-sin simplificar
-def polygon_elevation_sql_varias_sin_simplificar(geometry, format_out, dataset):
+#AAOR-->poligon_elevation original
+def polygon_elevation(geometry, format_out, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
     
@@ -354,9 +445,8 @@ def polygon_elevation_sql_varias_sin_simplificar(geometry, format_out, dataset):
         inicio_qgeom = time.perf_counter() #AAOR
         
         #-------
-        
-        #Consulta SQL para obtener los puntos y alturas dentro del polígono
-        # print('OJO: datos solicitados por sql')
+
+        # Consulta SQL para obtener los puntos y alturas dentro del polígono
         # consulta_sql = """
         #     WITH polygon_geom AS (
         #         SELECT ST_SetSRID(
@@ -429,7 +519,7 @@ def polygon_elevation_sql_varias_sin_simplificar(geometry, format_out, dataset):
         #     WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom)
         #     ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);
         # """
-        print('OJO: datos solicitados por sql-optimizada sin order by')
+
         consulta_sql = """
             WITH polygon_geom AS (
                 SELECT ST_SetSRID(
@@ -464,8 +554,7 @@ def polygon_elevation_sql_varias_sin_simplificar(geometry, format_out, dataset):
             result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
             print('lo que llega desde la BBDD')
             print('result_points',type(result_points))
-            #print('result_pointsssssss',result_points[0],result_points[1],result_points[2],result_points[3])
-            print('result_pointsssssss',result_points)
+            print('result_pointsssssss',result_points[0],result_points[1],result_points[2],result_points[3])
 
             # Construir la LINESTRING Z
             linestring_z = "LINESTRING Z ("
@@ -516,10 +605,12 @@ def polygon_elevation_sql_varias_sin_simplificar(geometry, format_out, dataset):
         
     return result_geom
 #OJO
-##AAOR-->Fin polygon_elevation sql-varias-sin simplificar
+##AAOR-->Fin polygon_elevation original
 
-#AAOR-->poligon_elevation sql-simplificada_1
-def polygon_elevation_sql_simplificada_1(geometry, format_out, dataset):
+
+#OJO
+##AAOR-->polygon_elevation original con medicion de tiempo
+def polygon_elevation__(geometry, format_out, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
     
@@ -537,349 +628,174 @@ def polygon_elevation_sql_simplificada_1(geometry, format_out, dataset):
     :returns: 3D polygon as GeoJSON or WKT
     :rtype: string
     """
-    
-    if geometry.geom_type == 'Polygon':
-
-        # Abrir la sesión una sola vez
-        session = db.get_session()
-
-        inicio_qgeom = time.perf_counter() #AAOR
-        
-        #-------
-        
-        #Consulta SQL para obtener los puntos y alturas dentro del polígono
-        # print('OJO: datos solicitados por sql')
-        # consulta_sql = """
-        #     WITH polygon_geom AS (
-        #         SELECT ST_SetSRID(
-        #                 ST_GeomFromText(:wkt_poligono), 4326
-        #             ) AS polygon
-        #     )
-        #     SELECT 
-        #         ST_X(geom) AS x,
-        #         ST_Y(geom) AS y,
-        #         ST_Value(rast, 1, geom) AS z
-        #     FROM oes_cgiar, polygon_geom,
-        #     LATERAL ST_PixelAsCentroids(
-        #         ST_Clip(rast, polygon_geom.polygon), 1
-        #     ) AS geom
-        #     WHERE ST_Intersects(rast, polygon_geom.polygon)
-        #     ORDER BY ST_X(geom), ST_Y(geom)
-        # """
-
-        # consulta_sql = """
-        #     WITH geom_polygon AS (
-        #         SELECT ST_SetSRID(
-        #             ST_GeomFromText(:wkt_poligono), 4326
-        #             ) AS geom
-        #     ),
-        #     intersecting_rasters AS (
-        #         SELECT r.rast, gp.geom
-        #         FROM cgiar_data r, geom_polygon gp
-        #         WHERE ST_Intersects(r.rast, gp.geom)
-        #     ),
-        #     clipped_rasters AS (
-        #         SELECT ST_Clip(ir.rast, ir.geom) AS clipped_rast
-        #         FROM intersecting_rasters ir
-        #     ),
-        #     pixel_geometries AS (
-        #         SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
-        #         FROM clipped_rasters cr
-        #     )
-        #     SELECT 
-        #         ST_X(pg.pixel_geom) AS longitud,
-        #         ST_Y(pg.pixel_geom) AS latitud,
-        #         pg.pixel_value AS altura
-        #     FROM pixel_geometries pg, geom_polygon gp
-        #     WHERE ST_Covers(gp.geom, pg.pixel_geom);
-        # """
-
-        # consulta_sql = """
-        #     WITH polygon_geom AS (
-        #         SELECT ST_SetSRID(
-        #                 ST_GeomFromText(:wkt_poligono), 4326
-        #             ) AS polygon
-        #     ),
-        #     intersecting_rasters AS (
-        #         SELECT r.rast, pg.polygon
-        #         FROM cgiar_data r, polygon_geom pg
-        #         WHERE ST_Intersects(r.rast, pg.polygon)
-        #     ),
-        #     clipped_rasters AS (
-        #         SELECT ST_Clip(ir.rast, ir.polygon) AS clipped_rast
-        #         FROM intersecting_rasters ir
-        #     ),
-        #     pixel_geometries AS (
-        #         SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
-        #         FROM clipped_rasters cr
-        #     )
-        #     SELECT 
-        #         ST_X(pg.pixel_geom) AS x,
-        #         ST_Y(pg.pixel_geom) AS y,
-        #         pg.pixel_value AS z
-        #     FROM pixel_geometries pg, polygon_geom pg_geom
-        #     WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom)
-        #     ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);
-        # """
-
-        print('OJO: datos solicitados por sql-optimizada sin order by')
-        consulta_sql = """
-            WITH polygon_geom AS (
-                SELECT ST_SetSRID(
-                        ST_GeomFromText(:wkt_poligono), 4326
-                    ) AS polygon
-            ),
-            intersecting_rasters AS (
-                SELECT r.rast, pg.polygon
-                FROM oes_cgiar r, polygon_geom pg
-                WHERE ST_Intersects(r.rast, pg.polygon)
-            ),
-            clipped_rasters AS (
-                SELECT ST_Clip(ir.rast, ir.polygon) AS clipped_rast
-                FROM intersecting_rasters ir
-            ),
-            pixel_geometries AS (
-                SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
-                FROM clipped_rasters cr
-            )
-            SELECT 
-                ST_Y(pg.pixel_geom) AS y,
-                ST_X(pg.pixel_geom) AS x, 
-                pg.pixel_value AS z
-            FROM pixel_geometries pg, polygon_geom pg_geom
-            WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom);
-        """
-        #ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);-->medir tiempo con order by y sin order by
-
-        result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
-        print('result_pointsssssss',result_points[0],result_points[1],result_points[2],result_points[3])
-        #print('result_pointsssssss',result_points)
-        
-        #-------
-        fin_qgeom = time.perf_counter() #AAOR
-
-
-        tiempo_transcurrido_qgeom = fin_qgeom - inicio_qgeom#AAOR
-        print(f"Tiempo de ejecución_qgeom: {tiempo_transcurrido_qgeom:.6f} segundos")#AAOR
-       
-        
-        
-    else:
-        raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
-
-    
-    # Behaviour when all vertices are out of bounds
-    if result_points == None:
-        raise InvalidUsage(404, 4002,
-                           'The requested geometry is outside the bounds of {}'.format(dataset))
-    print('----------- ')
-    print('sql-simplificada-1')
-        
-    return result_points
-#AAOR-->Fin poligon_elevation sql-simplificada_1
-
-#AAOR-->poligon_elevation sql-simplificada_2 (puede ser con o sin order by)
-def polygon_elevation_sql_simplificada_2(geometry, format_out, dataset):
-    """
-    Performs PostGIS query to enrich a polygon geometry.
-    
-    :param geometry: Input 2D polygon to be enriched with elevation
-    :type geometry: Shapely geometry
-    
-    :param format_out: Specifies output format. One of ['geojson', 'polygon']
-    :type format_out: string
-    
-    :param dataset: Elevation dataset to use for querying
-    :type dataset: string
-    
-    :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
-        
-    :returns: 3D polygon as GeoJSON or WKT
-    :rtype: string
-    """
-    
-    if geometry.geom_type == 'Polygon':
-
-        # Abrir la sesión una sola vez
-        session = db.get_session()
-
-        inicio_qgeom = time.perf_counter() #AAOR
-        
-        #-------
-        
-        #Consulta SQL para obtener los puntos y alturas dentro del polígono
-        print('OJO: datos solicitados por sql_simplificada_2 sin order by')
-        consulta_sql = """
-            WITH polygon_geom AS (
-                SELECT ST_SetSRID(
-                        ST_GeomFromText(:wkt_poligono), 4326
-                    ) AS polygon
-            ),
-            intersecting_rasters AS (
-                SELECT r.rast, pg.polygon
-                FROM oes_cgiar r, polygon_geom pg
-                WHERE ST_Intersects(r.rast, pg.polygon)
-            ),
-            clipped_rasters AS (
-                SELECT ST_Clip(ir.rast, ir.polygon) AS clipped_rast
-                FROM intersecting_rasters ir
-            ),
-            pixel_geometries AS (
-                SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
-                FROM clipped_rasters cr
-            )
-            SELECT 
-                ST_Y(pg.pixel_geom) AS y,
-                ST_X(pg.pixel_geom) AS x, 
-                pg.pixel_value AS z
-            FROM pixel_geometries pg, polygon_geom pg_geom
-            WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom);
-        """
-        #ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);-->medir tiempo con order by y sin order by
-
-        result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
-        print('result_pointsssssss',result_points[0],result_points[1],result_points[2],result_points[3])
-        #print('result_pointsssssss',result_points)
-        
-        #-------
-        fin_qgeom = time.perf_counter() #AAOR
-
-        tiempo_transcurrido_qgeom = fin_qgeom - inicio_qgeom#AAOR
-        print(f"Tiempo de ejecución_qgeom: {tiempo_transcurrido_qgeom:.6f} segundos")#AAOR
-            
-    else:
-        raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
-
-    
-    # Behaviour when all vertices are out of bounds
-    if result_points == None:
-        raise InvalidUsage(404, 4002,
-                           'The requested geometry is outside the bounds of {}'.format(dataset))
-    print('----------- ')
-    print('sql-simplificada-2')
-        
-    return result_points
-
-#AAOR-->Fin poligon_elevation sql-simplificada_2
-
-#AAOR-->Función process_coordinates-->se usa con la opción del ORM
-def process_coordinates(result_pixels):
-    """
-    Procesa una lista de resultados y devuelve una cadena que representa un LINESTRING Z
-    y el objeto LineString de Shapely con las coordenadas de longitud, latitud y altura válidas.
-
-    :param result_pixels: Lista de tuplas, donde cada tupla contiene una cadena con datos WKB y altura.
-    :return: Una cadena que representa un LINESTRING Z y el objeto LineString de Shapely.
-    """
-    coordinates = []
-
-    # Procesar cada resultado
-    for entry in result_pixels:
-        # Separar los componentes de la cadena
-        raw_data = entry[0].strip('()').split(',')
-        
-        # Extraer el WKB, convertir a entero la altura y validar
-        hex_wkb = raw_data[0]
-        height = int(raw_data[1])
-        
-        if height != -32768:  # Filtrar alturas no válidas
-            # Convertir el WKB hexadecimal a un objeto de geometría de Shapely
-            geom = wkb.loads(bytes.fromhex(hex_wkb))
-            
-            # Obtener las coordenadas de longitud (X) y latitud (Y)
-            longitude, latitude = geom.x, geom.y
-            
-            # Almacenar las coordenadas y la altura válidas en la lista
-            coordinates.append((longitude, latitude, height))
-
-    # Crear el objeto LineString Z con las coordenadas válidas
-    linestring_z = geometry.LineString(coordinates)
-
-    # Retornar la cadena y el objeto LineString
-    return linestring_z.wkt
-#Fin AAOR-->Función process_coordinates
-
-
-
-##AAOR-->polygon_elevation orm-simplificada
-def polygon_elevation_orm_simplificada(geometry, format_out, dataset):
-    """
-    Performs PostGIS query to enrich a polygon geometry.
-    
-    :param geometry: Input 2D polygon to be enriched with elevation
-    :type geometry: Shapely geometry
-    
-    :param format_out: Specifies output format. One of ['geojson', 'polygon']
-    :type format_out: string
-    
-    :param dataset: Elevation dataset to use for querying
-    :type dataset: string
-    
-    :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
-        
-    :returns: 3D polygon as GeoJSON or WKT
-    :rtype: string
-    """
-    
+    #AAOR
+    print('Entrando a poligon_elevation Original con medicion de tiempo')
     Model = _getModel(dataset)
     
     if geometry.geom_type == 'Polygon':
 
-        # Abrir la sesión una sola vez
-        session = db.get_session()
+        inicio_consulta_queried_1 = time.perf_counter()#AAOR 
 
-        inicio_qgeom = time.perf_counter() #AAOR
-        
-        query_geom = session \
+        query_geom = db.get_session() \
                             .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
                             .label('geom')) \
                             .subquery().alias('pGeom')
         
-        print('OJO: datos solicitados por el ORM_simplificado')
-        result_pixels = session \
+        fin_consulta_queried_1 = time.perf_counter()#AAOR
+        tiempo_transcurrido_consulta_queried_1 = fin_consulta_queried_1 - inicio_consulta_queried_1#AAOR
+        print(f"Tiempo de ejecución_consulta_queried_1: {tiempo_transcurrido_consulta_queried_1:.6f} segundos")#AAOR
+        #print('Tiempo de ejecución_consulta',query_geom)#AAOR
+        print('Tiempo de ejecución_consulta_queried_1_T',type(query_geom))#AAOR
+
+        print('query_geom')
+        #print(query_geom)
+        print('\n')#AAOR
+
+
+        inicio_consulta_queried_2 = time.perf_counter()#AAOR 
+
+        result_pixels = db.get_session() \
                             .query(func.DISTINCT(func.ST_PixelAsCentroids(
                                 func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
                                 1, False))) \
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
+        fin_consulta_queried_2 = time.perf_counter()#AAOR
+        tiempo_transcurrido_consulta_queried_2 = fin_consulta_queried_2 - inicio_consulta_queried_2#AAOR
+        print(f"Tiempo de ejecución_consulta_queried_2: {tiempo_transcurrido_consulta_queried_2:.6f} segundos")#AAOR
+        #print('Tiempo de ejecución_consulta_1',result_pixels)#AAOR
+        print('Tiempo de ejecución_consulta_queried_2_T',type(result_pixels))#AAOR
+
+        print('result_pixels')
         #print(result_pixels)
         
-        fin_qgeom = time.perf_counter() #AAOR
-
-        tiempo_transcurrido_qgeom = fin_qgeom - inicio_qgeom#AAOR
-        print(f"Tiempo de ejecución_qgeom: {tiempo_transcurrido_qgeom:.6f} segundos")#AAOR
-       
-        inicio_rgeom = time.perf_counter() #AAOR
-        #AAOR
-        result_geom=process_coordinates(result_pixels)
-        #print(result_geom)
-        #AAOR
-        fin_rgeom = time.perf_counter() #AAOR
-        tiempo_transcurrido_rgeom = fin_rgeom - inicio_rgeom#AAOR
-        print(f"Tiempo de ejecución_rgeom: {tiempo_transcurrido_rgeom:.6f} segundos")#AAOR
-        print(f"Tiempo de ejecución ggeom+rgeom: {tiempo_transcurrido_rgeom+tiempo_transcurrido_qgeom:.6f} segundos")#AAOR
+        print('\n')#AAOR
         
+        inicio_consulta_queried_3 = time.perf_counter()#AAOR 
+
+        point_col, height_col = format_PixelAsGeoms(result_pixels)
+
+        fin_consulta_queried_3 = time.perf_counter()#AAOR
+        tiempo_transcurrido_consulta_queried_3 = fin_consulta_queried_3 - inicio_consulta_queried_3#AAOR
+        print(f"Tiempo de ejecución_consulta_queried_3: {tiempo_transcurrido_consulta_queried_3:.6f} segundos")#AAOR
+        #print('Tiempo de ejecución_consulta_queried_3',result_pixels)#AAOR
+        #print('Tiempo de ejecución_consulta_queried_3_T',type(result_pixels))#AAOR
+
+        print('point_col')
+        #print(point_col)
+
+        print('height_col')
+        #print(height_col)
+
+        print('\n')#AAOR
+
+        inicio_consulta_queried_4 = time.perf_counter()#AAOR 
+
+        raster_points3d = db.get_session() \
+                            .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
+                                                                     ST_Y(point_col),
+                                                                     height_col),
+                                              4326).label('geom')) \
+                            .order_by(ST_X(point_col), ST_Y(point_col)) \
+                            .subquery().alias('raster3d')
+        
+        fin_consulta_queried_4 = time.perf_counter()#AAOR
+        tiempo_transcurrido_consulta_queried_4 = fin_consulta_queried_4 - inicio_consulta_queried_4#AAOR
+        print(f"Tiempo de ejecución_consulta_queried_4: {tiempo_transcurrido_consulta_queried_4:.6f} segundos")#AAOR
+        #print('Tiempo de ejecución_consulta_queried_4',type(result_pixels))#AAOR
+        print('raster_points3d')
+        #print(raster_points3d)
+
+
+        print('\n')#AAOR
+
+        inicio_consulta_queried_5 = time.perf_counter()#AAOR 
+
+        query_points3d = db.get_session() \
+                            .query(raster_points3d.c.geom) \
+                            .select_from(raster_points3d) \
+                            .join(query_geom, func.ST_Within(raster_points3d.c.geom, query_geom.c.geom)) \
+                            .subquery().alias('points3d')
+        
+        fin_consulta_queried_5 = time.perf_counter()#AAOR
+        tiempo_transcurrido_consulta_queried_5 = fin_consulta_queried_5 - inicio_consulta_queried_5#AAOR
+        print(f"Tiempo de ejecución_consulta_queried_5: {tiempo_transcurrido_consulta_queried_5:.6f} segundos")#AAOR
+        #print('Tiempo de ejecución_consulta_queried_5',type(result_pixels))#AAOR
+
+        print('query_points3d')
+        #print(query_points3d)
+        
+        print('\n')#AAOR
+
+        if format_out == 'geojson':
+            # Return GeoJSON directly in PostGIS
+            inicio_consulta_queried_6 = time.perf_counter()#AAOR 
+
+            query_final = db.get_session() \
+                              .query(func.ST_AsGeoJson(func.ST_Collect(query_points3d.c.geom)))
+            
+            fin_consulta_queried_6 = time.perf_counter()#AAOR
+            tiempo_transcurrido_consulta_queried_6 = fin_consulta_queried_6 - inicio_consulta_queried_6#AAOR
+            print(f"Tiempo de ejecución_consulta_queried_6: {tiempo_transcurrido_consulta_queried_6:.6f} segundos")#AAOR
+            #print('Tiempo de ejecución_consulta_queried_6',type(result_pixels))#AAOR
+
+            print('query_final_IF')
+            #print(query_final)
+            print('\n')#AAOR
+            
+        else:
+            # Else return the WKT of the geometry
+            inicio_consulta_queried_7 = time.perf_counter()#AAOR 
+
+            query_final = db.get_session() \
+                              .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom)))
+            
+            fin_consulta_queried_7 = time.perf_counter()#AAOR
+            tiempo_transcurrido_consulta_queried_7 = fin_consulta_queried_7 - inicio_consulta_queried_7#AAOR
+            print(f"Tiempo de ejecución_consulta_queried_7: {tiempo_transcurrido_consulta_queried_7:.6f} segundos")#AAOR
+            #print('Tiempo de ejecución_consulta_queried_7',type(result_pixels))#AAOR
+
+            print('query_final_else')
+            #print(query_final)
+            print('\n')#AAOR
+
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
-
     
+    inicio_consulta_queried_8 = time.perf_counter()#AAOR 
+
+    result_geom = query_final.scalar()
+
+    fin_consulta_queried_8 = time.perf_counter()#AAOR
+    tiempo_transcurrido_consulta_queried_8 = fin_consulta_queried_8 - inicio_consulta_queried_8#AAOR
+    print(f"Tiempo de ejecución_consulta_queried_8: {tiempo_transcurrido_consulta_queried_8:.6f} segundos")#AAOR
+    #print('Tiempo de ejecución_consulta_queried_8',type(result_pixels))#AAOR
+
+    print('result_geom')
+    #print(result_geom)
+    print('\n')#AAOR
+
+    #OJO:no entra ala 6-->tiempo_transcurrido_consulta_queried_6
+    tiempo_transcurrido_consulta_queried_desde_1_hasta_8=tiempo_transcurrido_consulta_queried_1+\
+                                                         tiempo_transcurrido_consulta_queried_2+\
+                                                         tiempo_transcurrido_consulta_queried_3+\
+                                                         tiempo_transcurrido_consulta_queried_4+\
+                                                         tiempo_transcurrido_consulta_queried_5+\
+                                                         tiempo_transcurrido_consulta_queried_7+\
+                                                         tiempo_transcurrido_consulta_queried_8                                                        
+    print(f"Tiempo de ejecución_consulta_queried_desde_1_hasta_8: {tiempo_transcurrido_consulta_queried_desde_1_hasta_8:.6f} segundos")#AAOR
+    #print('Tiempo de ejecución_consulta_queried_8',type(result_geom))#AAOR
+    print('\n')#AAOR
+
     # Behaviour when all vertices are out of bounds
     if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
-    print('----------- ')
-    print('orm-simplificado')
         
     return result_geom
-
-##AAOR-->Fin polygon_elevation orm-simplificada
-
-
-
-
-
-
+#OJO
+##AAOR-->Fin polygon_elevation original con medicion de tiempo
 
 #OJO
 #AAOR-->polygon_elevation refactorizada
@@ -994,92 +910,10 @@ def polygon_elevation_ref_sin_mt(geometry, format_out, dataset):
         result_geom = session.query(func.ST_AsText(func.ST_MakeLine(func.ST_GeomFromGeoJSON(result_geom)))).scalar()
 
     return result_geom
+
+
+#OJO
 #AAOR-->Fin polygon_elevation refactorizada sin medicion de tiempo
-
-#AAOR-->polygon_elevation original-->OJO:cambiar AreaPointElevation en grpc_server.py
-def polygon_elevation_original(geometry, format_out, dataset):
-    """
-    Performs PostGIS query to enrich a polygon geometry.
-    
-    :param geometry: Input 2D polygon to be enriched with elevation
-    :type geometry: Shapely geometry
-    
-    :param format_out: Specifies output format. One of ['geojson', 'polygon']
-    :type format_out: string
-    
-    :param dataset: Elevation dataset to use for querying
-    :type dataset: string
-    
-    :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
-        
-    :returns: 3D polygon as GeoJSON or WKT
-    :rtype: string
-    """
-    
-    Model = _getModel(dataset)
-    
-    if geometry.geom_type == 'Polygon':
-
-        query_geom = db.get_session() \
-                            .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
-                            .label('geom')) \
-                            .subquery().alias('pGeom')
-
-        result_pixels = db.get_session() \
-                            .query(func.DISTINCT(func.ST_PixelAsCentroids(
-                                func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
-                                1, False))) \
-                            .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
-                            .all()
-        
-        point_col, height_col = format_PixelAsGeoms(result_pixels)
-        
-
-        raster_points3d = db.get_session() \
-                            .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
-                                                                     ST_Y(point_col),
-                                                                     height_col),
-                                              4326).label('geom')) \
-                            .order_by(ST_X(point_col), ST_Y(point_col)) \
-                            .subquery().alias('raster3d')
-
-        query_points3d = db.get_session() \
-                            .query(raster_points3d.c.geom) \
-                            .select_from(raster_points3d) \
-                            .join(query_geom, func.ST_Within(raster_points3d.c.geom, query_geom.c.geom)) \
-                            .subquery().alias('points3d')
-
-        if format_out == 'geojson':
-            # Return GeoJSON directly in PostGIS
-            
-            query_final = db.get_session() \
-                              .query(func.ST_AsGeoJson(func.ST_Collect(query_points3d.c.geom)))
-            
-                        
-        else:
-            # Else return the WKT of the geometry
-            
-            query_final = db.get_session() \
-                              .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom)))
-            
-
-    else:
-        raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
-    
-
-    result_geom = query_final.scalar()
-
-
-    
-    # Behaviour when all vertices are out of bounds
-    if result_geom == None:
-        raise InvalidUsage(404, 4002,
-                           'The requested geometry is outside the bounds of {}'.format(dataset))
-    print('----------- ')
-    print('polygon_elevation original-->OJO:cambiar AreaPointElevation en grpc_server.py')
-    return result_geom
-
-#AAOR-->Fin polygon_elevation original
 
 
 

@@ -358,64 +358,12 @@ def process_coordinates(result_pixels):
 
     # Retornar la cadena y el objeto LineString
     return linestring_z.wkt
-
-
-def process_coordinates_(result_pixels):
-    """
-    Procesa una lista de resultados y devuelve una cadena que representa un LINESTRING Z
-    y el objeto LineString de Shapely con las coordenadas de longitud, latitud y altura válidas.
-
-    :param result_pixels: Lista de tuplas, donde cada tupla contiene una cadena con datos WKB y altura.
-    :return: Una cadena que representa un LINESTRING Z y el objeto LineString de Shapely.
-    """
-    coordinates = []
-
-    # Iniciar temporizador para medir el tiempo de ejecución
-    start_time = time.perf_counter()
-
-    # Procesar cada resultado
-    for entry in result_pixels:
-        # Separar los componentes de la cadena
-        raw_data = entry[0].strip('()').split(',')
-        
-        # Extraer el WKB, convertir a entero la altura y validar
-        hex_wkb = raw_data[0]
-        height = int(raw_data[1])
-        
-        if height != -32768:  # Filtrar alturas no válidas
-            # Convertir el WKB hexadecimal a un objeto de geometría de Shapely
-            geom = wkb.loads(bytes.fromhex(hex_wkb))
-            
-            # Obtener las coordenadas de longitud (X) y latitud (Y)
-            longitude, latitude = geom.x, geom.y
-            
-            # Almacenar las coordenadas y la altura válidas en la lista
-            coordinates.append((longitude, latitude, height))
-
-    # Crear el objeto LineString Z con las coordenadas válidas
-    linestring_z = geometry.LineString(coordinates)
-
-    # Terminar temporizador para medir el tiempo de ejecución
-    end_time = time.perf_counter()
-    print(f"Tiempo de ejecución de process_coordinates_: {end_time - start_time:.6f} segundos")
-    
-    # Limpiar referencias explícitamente
-    del coordinates, result_pixels
-    
-    # Forzar la recolección de basura para liberar memoria
-    gc.collect()
-
-    # Retornar la representación WKT del objeto LineString
-    return linestring_z.wkt
-
-
-
 #Fin AAOR-->Función process_coordinates
 
 
 
 #OJO
-#AAOR-->poligon_elevation original
+#AAOR-->poligon_elevation orm-original
 def polygon_elevation(geometry, format_out, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
@@ -449,6 +397,7 @@ def polygon_elevation(geometry, format_out, dataset):
                             .label('geom')) \
                             .subquery().alias('pGeom')
         
+        print('OJO: datos solicitados por el ORM')
         result_pixels = session \
                             .query(func.DISTINCT(func.ST_PixelAsCentroids(
                                 func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
@@ -456,7 +405,7 @@ def polygon_elevation(geometry, format_out, dataset):
                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
                             .all()
         
-        print(result_pixels)
+        #print(result_pixels)
         
         fin_qgeom = time.perf_counter() #AAOR
 
@@ -479,12 +428,12 @@ def polygon_elevation(geometry, format_out, dataset):
     if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
-    print('-----------')
+    print('----------- ')
     print('cooooon mejoras orm mmm')
         
     return result_geom
 #OJO
-##AAOR-->Fin polygon_elevation original
+##AAOR-->Fin polygon_elevation orm-original
 
 
 #OJO

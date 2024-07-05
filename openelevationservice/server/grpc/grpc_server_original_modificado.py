@@ -8,9 +8,10 @@ from grpc_reflection.v1alpha import reflection
 from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
+from openelevationservice.server.api import direct_queries_hanli
+
 #AAOR: importo time para medir el tiempo
 import time
-
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
@@ -33,12 +34,34 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     @handle_exceptions
     def PointElevation(self, request, context):
+        inicio_todo = time.perf_counter() #AAOR
+        print('Comentario AAOR_1',request)
+        print('Comentario AAOR_1_T',type(request))
+
         geom = convert.point_to_geometry([request.lon, request.lat])
+        print('Comentario AAOR_2',geom)
+        print('Comentario AAOR_2_T',type(geom))
+
         geom_queried = querybuilder.point_elevation(geom, 'point', 'srtm')
+        
+        print('Comentario AAOR_3',geom_queried)
+        print('Comentario AAOR_3_T',type(geom_queried))
+
         geom_shaped = wkt.loads(geom_queried)
+        print('Comentario AAOR_4',geom_shaped)
+        print('Comentario AAOR_4_T',type(geom_shaped))
+
         point_3d = list(geom_shaped.coords[0])
+        print('Comentario AAOR_5',point_3d)
+        print('Comentario AAOR_5_T',type(point_3d))
+
         elevation = int(point_3d[2])
-       
+        print('Comentario AAOR_6',elevation)
+        print('Comentario AAOR_6_T',type(elevation))
+
+        fin_todo = time.perf_counter()#AAOR
+        tiempo_transcurrido_todo = fin_todo - inicio_todo#AAOR
+        print(f"Tiempo de ejecución_todooooooooo: {tiempo_transcurrido_todo:.6f} segundos")#AAOR
 
         return defs.Elevation(value=elevation)
 
@@ -74,88 +97,24 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             [min_lon, min_lat]
         ]
 
-
-    ##AAOR-->AreaPointElevation-Simplificado
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
-        print('grpc_server_original')
-
-        inicio_todo = time.perf_counter() 
-        print('Comentario AAOR_1',request)
-        print('Comentario AAOR_1_T',type(request))
-        
-        inicio_convert = time.perf_counter() #AAOR
-        geom = convert.polygon_to_geometry(self._format_area_request(request))
-        print('Comentario AAOR_1 geom',type(geom))
-        print('Comentario AAOR_1 geom',geom)
-        fin_convert = time.perf_counter() #AAOR
-       
-        inicio_queried = time.perf_counter() #AAOR
-        #geom_queried = querybuilder.polygon_elevation_sql_simplificada_1(geom, 'polygon', 'srtm')
-        geom_queried = querybuilder.polygon_elevation_sql_simplificada_2(geom, 'polygon', 'srtm')
-        #geom_queried = querybuilder.polygon_elevation_orm_simplificada(geom, 'polygon', 'srtm')
-        print('geom_queried',type(geom_queried))
-        #print('geom_queried',geom_queried[0:160])
-        #geom_queried = querybuilder.polygon_elevation_ref(geom, 'polygon', 'srtm')
-        #geom_queried = querybuilder.polygon_elevation__(geom, 'polygon', 'srtm')
-        fin_queried = time.perf_counter() #AAOR
-        
-        #print('result_points como geom_queried',geom_queried)
-
-        #geom_shaped = wkt.loads(geom_queried) 
-
-        inicio_result = time.perf_counter() #AAOR (4)-->Sólo este proceso al simplificar
-        result = []
-        for point in list(geom_queried):
-            result.append(defs.LatLonElevation(
-                lat=point[0],
-                lon=point[1],
-                elevation=int(point[2])
-            ))
-        fin_result = time.perf_counter() #AAOR
-
-        #print('result',result)
-        fin_todo = time.perf_counter()#AAOR
-
-        tiempo_transcurrido_todo = fin_todo - inicio_todo#AAOR
-        tiempo_transcurrido_convert = fin_convert - inicio_convert#AAOR
-        tiempo_transcurrido_queried = fin_queried - inicio_queried#AAOR
-        #tiempo_transcurrido_queried_ref = fin_queried_ref - inicio_queried_ref#AAOR
-        
-        #tiempo_transcurrido_shaped_ref = fin_shaped_ref - inicio_shaped_ref#AAOR
-        tiempo_transcurrido_result = fin_result - inicio_result#AAOR
-        print('\n')#AAOR
-        print(f"Tiempo de ejecución_todooooooooo: {tiempo_transcurrido_todo:.6f} segundos")#AAOR
-        print(f"Tiempo de ejecución_convert: {tiempo_transcurrido_convert:.6f} segundos")#AAOR
-        print(f"Tiempo de ejecución_queried: {tiempo_transcurrido_queried:.6f} segundos")#AAOR
-        #print(f"Tiempo de ejecución_queried_ref: {tiempo_transcurrido_queried_ref:.6f} segundos")#AAOR
-        
-        #print(f"Tiempo de ejecución_shaped_ref: {tiempo_transcurrido_shaped_ref:.6f} segundos")#AAOR
-        print(f"Tiempo de ejecución_result: {tiempo_transcurrido_result:.6f} segundos")#AAOR
-        print(f"Retardo del proceso sin el queried: {tiempo_transcurrido_todo - tiempo_transcurrido_queried:.6f} segundos")#AAOR 
-        
-        return defs.AreaPointsResponse(points=result)
-    ##AAOR-->Fin AreaPointsElevation-Simplificado
-    
-    ##AAOR-->AreaPointsElevation-Original
-    @handle_exceptions
-    def AreaPointsElevation_(self, request, context):
         inicio_todo = time.perf_counter() 
         print('Comentario AAOR_1',request)
         print('Comentario AAOR_1_T',type(request))
 
         inicio_convert = time.perf_counter() #AAOR
         geom = convert.polygon_to_geometry(self._format_area_request(request))#(1)
-        #print('Comentario AAOR_1 geom',type(geom))
+        print('Comentario AAOR_1 geom',type(geom))
         print('Comentario AAOR_1 geom',geom)
         fin_convert = time.perf_counter() #AAOR
 
 
 
         inicio_queried = time.perf_counter() #AAOR
-        geom_queried = querybuilder.polygon_elevation_original(geom, 'polygon', 'srtm')#(2)-->llamada al script qurybuilder.py
+        geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')#(2)-->llamada al script qurybuilder.py
         print('geom_queried',type(geom_queried))
-        #print('geom_queried',geom_queried[0:160])
+        print('geom_queried',geom_queried[0:160])
         #geom_queried = querybuilder.polygon_elevation_ref(geom, 'polygon', 'srtm')
         #geom_queried = querybuilder.polygon_elevation__(geom, 'polygon', 'srtm')
         fin_queried = time.perf_counter() #AAOR
@@ -213,12 +172,11 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         print(f"Tiempo de ejecución_result: {tiempo_transcurrido_result:.6f} segundos")#AAOR
         print(f"Retardo del proceso sin el queried: {tiempo_transcurrido_todo - tiempo_transcurrido_queried:.6f} segundos")#AAOR
 
-        # print('lo que se retorna finalmente')
-        # print('result',type(result))
-        # print('result',result[0], result[1], result[2], result[3])  
+        print('lo que se retorna finalmente')
+        print('result',type(result))
+        print('result',result[0], result[1], result[2], result[3])  
         
         return defs.AreaPointsResponse(points=result)
-    ##AAOR-->Fin AreaPointsElevation-Original
     
     def _create_proto_geo_polygon(self, coordinates):
         return defs.Area(boundaries=[
@@ -258,6 +216,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         )
 
 def grpc_serve(port_url):
+    print('Comentario AAOR: Entre aqui')
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     openelevation_pb2_grpc.add_OpenElevationServicer_to_server(
         OpenElevationServicer(), server)
