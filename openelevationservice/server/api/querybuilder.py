@@ -762,6 +762,75 @@ def polygon_elevation_sql_simplificada_2(geometry, format_out, dataset):
 
 #AAOR-->Fin poligon_elevation sql-simplificada_2
 
+#OJO
+#AAOR-->poligon_elevation sql-simplificada_2_sin medicionde tiempo (puede ser con o sin order by)
+def polygon_elevation_sql_simplificada_2_smt(geometry, format_out, dataset):
+    """
+    Performs PostGIS query to enrich a polygon geometry.
+    
+    :param geometry: Input 2D polygon to be enriched with elevation
+    :type geometry: Shapely geometry
+    
+    :param format_out: Specifies output format. One of ['geojson', 'polygon']
+    :type format_out: string
+    
+    :param dataset: Elevation dataset to use for querying
+    :type dataset: string
+    
+    :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
+        
+    :returns: 3D polygon as GeoJSON or WKT
+    :rtype: string
+    """
+    
+    if geometry.geom_type == 'Polygon':
+
+        session = db.get_session()
+        
+        consulta_sql = """
+            WITH polygon_geom AS (
+                SELECT ST_SetSRID(
+                        ST_GeomFromText(:wkt_poligono), 4326
+                    ) AS polygon
+            ),
+            intersecting_rasters AS (
+                SELECT r.rast, pg.polygon
+                FROM oes_cgiar r, polygon_geom pg
+                WHERE ST_Intersects(r.rast, pg.polygon)
+            ),
+            clipped_rasters AS (
+                SELECT ST_Clip(ir.rast, ir.polygon) AS clipped_rast
+                FROM intersecting_rasters ir
+            ),
+            pixel_geometries AS (
+                SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
+                FROM clipped_rasters cr
+            )
+            SELECT 
+                ST_Y(pg.pixel_geom) AS y,
+                ST_X(pg.pixel_geom) AS x, 
+                pg.pixel_value AS z
+            FROM pixel_geometries pg, polygon_geom pg_geom
+            WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom);
+        """
+        #ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);-->measuring time with and without order by
+
+        result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
+            
+    else:
+        raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
+
+    
+    # Behaviour when all vertices are out of bounds
+    if result_points == None:
+        raise InvalidUsage(404, 4002,
+                           'The requested geometry is outside the bounds of {}'.format(dataset))
+        
+    return result_points
+
+#AAOR-->Fin poligon_elevation sql-simplificada_2_sin medicionde tiempo
+
+
 #AAOR-->Función process_coordinates-->se usa con la opción del ORM
 def process_coordinates(result_pixels):
     """

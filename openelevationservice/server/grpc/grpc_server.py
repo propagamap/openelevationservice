@@ -75,10 +75,10 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         ]
 
 
-    ##AAOR-->AreaPointElevation-Simplificado
+    ##AAOR-->AreaPointElevation-Simplificado-con medición de tiempo
     @handle_exceptions
-    def AreaPointsElevation(self, request, context):
-        print('grpc_server_original')
+    def AreaPointsElevation_(self, request, context):
+        print('grpc_server_original_con medición de tiempo')
 
         inicio_todo = time.perf_counter() 
         print('Comentario AAOR_1',request)
@@ -135,7 +135,36 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         print(f"Retardo del proceso sin el queried: {tiempo_transcurrido_todo - tiempo_transcurrido_queried:.6f} segundos")#AAOR 
         
         return defs.AreaPointsResponse(points=result)
-    ##AAOR-->Fin AreaPointsElevation-Simplificado
+    ##AAOR-->Fin AreaPointsElevation-Simplificado-con medición de tiempo
+
+    ##AAOR-->AreaPointElevation-Simplificado-sin medición de tiempo
+    @handle_exceptions
+    def AreaPointsElevation(self, request, context):
+        print('grpc_server_modificada_sin medición de tiempo')
+
+        inicio_todo = time.perf_counter() 
+
+        geom = convert.polygon_to_geometry(self._format_area_request(request))
+
+        geom_queried = querybuilder.polygon_elevation_sql_simplificada_2_smt(geom, 'polygon', 'srtm')
+
+        result = []
+        for point in list(geom_queried):
+            result.append(defs.LatLonElevation(
+                lat=point[0],
+                lon=point[1],
+                elevation=int(point[2])
+            ))
+
+        fin_todo = time.perf_counter()#AAOR
+        tiempo_transcurrido_todo = fin_todo - inicio_todo#AAOR
+        print(f"Tiempo de ejecución_todooooooooo: {tiempo_transcurrido_todo:.6f} segundos")#AAOR
+
+        return defs.AreaPointsResponse(points=result)
+    ##AAOR-->Fin AreaPointsElevation-Simplificado-sin medición de tiempo
+
+
+
     
     ##AAOR-->AreaPointsElevation-Original
     @handle_exceptions
