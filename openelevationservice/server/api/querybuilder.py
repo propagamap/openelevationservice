@@ -8,7 +8,7 @@ from openelevationservice.server.grpc.db_grpc import db, Cgiar
 from openelevationservice.server.api.api_exceptions import InvalidUsage
 
 from geoalchemy2.functions import ST_Value, ST_Intersects, ST_X, ST_Y # ST_DumpPoints, ST_Dump, 
-from sqlalchemy import func, literal_column, case
+from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
@@ -154,8 +154,81 @@ def polygon_coloring_elevation(geometry, dataset):
 
     return result_geom, [min_height, max_height], avg_height
 
+##Original code for the polygon_elevation function
+# def polygon_elevation(geometry, format_out, dataset):
+#     """
+#     Performs PostGIS query to enrich a polygon geometry.
+    
+#     :param geometry: Input 2D polygon to be enriched with elevation
+#     :type geometry: Shapely geometry
+    
+#     :param format_out: Specifies output format. One of ['geojson', 'polygon']
+#     :type format_out: string
+    
+#     :param dataset: Elevation dataset to use for querying
+#     :type dataset: string
+    
+#     :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
+        
+#     :returns: 3D polygon as GeoJSON or WKT
+#     :rtype: string
+#     """
+    
+#     Model = _getModel(dataset)
+    
+#     if geometry.geom_type == 'Polygon':
+#         query_geom = db.get_session() \
+#                             .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
+#                             .label('geom')) \
+#                             .subquery().alias('pGeom')
 
-def polygon_elevation(geometry, format_out, dataset):
+#         result_pixels = db.get_session() \
+#                             .query(func.DISTINCT(func.ST_PixelAsCentroids(
+#                                 func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
+#                                 1, False))) \
+#                             .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
+#                             .all()
+        
+#         point_col, height_col = format_PixelAsGeoms(result_pixels)
+
+#         raster_points3d = db.get_session() \
+#                             .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
+#                                                                      ST_Y(point_col),
+#                                                                      height_col),
+#                                               4326).label('geom')) \
+#                             .order_by(ST_X(point_col), ST_Y(point_col)) \
+#                             .subquery().alias('raster3d')
+
+#         query_points3d = db.get_session() \
+#                             .query(raster_points3d.c.geom) \
+#                             .select_from(raster_points3d) \
+#                             .join(query_geom, func.ST_Within(raster_points3d.c.geom, query_geom.c.geom)) \
+#                             .subquery().alias('points3d')
+
+#         if format_out == 'geojson':
+#             # Return GeoJSON directly in PostGIS
+#             query_final = db.get_session() \
+#                               .query(func.ST_AsGeoJson(func.ST_Collect(query_points3d.c.geom)))
+            
+#         else:
+#             # Else return the WKT of the geometry
+#             query_final = db.get_session() \
+#                               .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom)))
+#     else:
+#         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
+    
+#     result_geom = query_final.scalar()
+
+#     # Behaviour when all vertices are out of bounds
+#     if result_geom == None:
+#         raise InvalidUsage(404, 4002,
+#                            'The requested geometry is outside the bounds of {}'.format(dataset))
+        
+#     return result_geom
+
+
+##Start-Modified AAOR code for polygon_elevation function
+def polygon_elevation_sql_simplificada_2_smt(geometry, format_out, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
     
@@ -174,57 +247,52 @@ def polygon_elevation(geometry, format_out, dataset):
     :rtype: string
     """
     
-    Model = _getModel(dataset)
-    
     if geometry.geom_type == 'Polygon':
-        query_geom = db.get_session() \
-                            .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
-                            .label('geom')) \
-                            .subquery().alias('pGeom')
 
-        result_pixels = db.get_session() \
-                            .query(func.DISTINCT(func.ST_PixelAsCentroids(
-                                func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
-                                1, False))) \
-                            .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
-                            .all()
+        session = db.get_session()
         
-        point_col, height_col = format_PixelAsGeoms(result_pixels)
+        consulta_sql = """
+            WITH polygon_geom AS (
+                SELECT ST_SetSRID(
+                        ST_GeomFromText(:wkt_poligono), 4326
+                    ) AS polygon
+            ),
+            intersecting_rasters AS (
+                SELECT r.rast, pg.polygon
+                FROM oes_cgiar r, polygon_geom pg
+                WHERE ST_Intersects(r.rast, pg.polygon)
+            ),
+            clipped_rasters AS (
+                SELECT ST_Clip(ir.rast, ir.polygon) AS clipped_rast
+                FROM intersecting_rasters ir
+            ),
+            pixel_geometries AS (
+                SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
+                FROM clipped_rasters cr
+            )
+            SELECT 
+                ST_Y(pg.pixel_geom) AS y,
+                ST_X(pg.pixel_geom) AS x, 
+                pg.pixel_value AS z
+            FROM pixel_geometries pg, polygon_geom pg_geom
+            WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom);
+        """
+        #ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);-->measuring time with and without order by
 
-        raster_points3d = db.get_session() \
-                            .query(func.ST_SetSRID(func.ST_MakePoint(ST_X(point_col),
-                                                                     ST_Y(point_col),
-                                                                     height_col),
-                                              4326).label('geom')) \
-                            .order_by(ST_X(point_col), ST_Y(point_col)) \
-                            .subquery().alias('raster3d')
-
-        query_points3d = db.get_session() \
-                            .query(raster_points3d.c.geom) \
-                            .select_from(raster_points3d) \
-                            .join(query_geom, func.ST_Within(raster_points3d.c.geom, query_geom.c.geom)) \
-                            .subquery().alias('points3d')
-
-        if format_out == 'geojson':
-            # Return GeoJSON directly in PostGIS
-            query_final = db.get_session() \
-                              .query(func.ST_AsGeoJson(func.ST_Collect(query_points3d.c.geom)))
+        result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
             
-        else:
-            # Else return the WKT of the geometry
-            query_final = db.get_session() \
-                              .query(func.ST_AsText(func.ST_MakeLine(query_points3d.c.geom)))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
-    
-    result_geom = query_final.scalar()
 
+    
     # Behaviour when all vertices are out of bounds
-    if result_geom == None:
+    if result_points == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
         
-    return result_geom
+    return result_points
+##End-Modified AAOR code for polygon_elevation function
+
 
 
 def line_elevation(geometry, format_out, dataset):

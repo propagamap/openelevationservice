@@ -69,14 +69,32 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             [min_lon, min_lat]
         ]
 
+    ##Original code for the AreaPointsElevation function
+    # @handle_exceptions
+    # def AreaPointsElevation(self, request, context):
+    #     geom = convert.polygon_to_geometry(self._format_area_request(request))
+    #     geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
+    #     geom_shaped = wkt.loads(geom_queried)
+        
+    #     result = []
+    #     for point in list(geom_shaped.coords):
+    #         result.append(defs.LatLonElevation(
+    #             lon=point[0],
+    #             lat=point[1],
+    #             elevation=int(point[2])
+    #         ))
+
+    #     return defs.AreaPointsResponse(points=result)
+
+
+    ##Start-Modified AAOR code for AreaPointsElevation function
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
-        geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
-        geom_shaped = wkt.loads(geom_queried)
-        
+        geom_queried = querybuilder.polygon_elevation_smt(geom, 'polygon', 'srtm')
+    
         result = []
-        for point in list(geom_shaped.coords):
+        for point in list(geom_queried):
             result.append(defs.LatLonElevation(
                 lon=point[0],
                 lat=point[1],
@@ -84,6 +102,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             ))
 
         return defs.AreaPointsResponse(points=result)
+ ##End-Modified AAOR code for AreaPointsElevation function
+    
     
     def _create_proto_geo_polygon(self, coordinates):
         return defs.Area(boundaries=[
