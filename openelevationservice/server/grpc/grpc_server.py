@@ -83,8 +83,9 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     #             lat=point[1],
     #             elevation=int(point[2])
     #         ))
-
+    
     #     return defs.AreaPointsResponse(points=result)
+    ##Fin-Original code for the AreaPointsElevation function
 
 
     ##Start-Modified AAOR code for AreaPointsElevation function
@@ -92,7 +93,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     def AreaPointsElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         geom_queried = querybuilder.polygon_elevation_sql_simplificada_2_smt(geom, 'polygon', 'srtm')
-    
+        
         result = []
         for point in list(geom_queried):
             result.append(defs.LatLonElevation(
@@ -100,7 +101,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 lat=point[1],
                 elevation=int(point[2])
             ))
-
+        
         return defs.AreaPointsResponse(points=result)
  ##End-Modified AAOR code for AreaPointsElevation function
     
