@@ -78,7 +78,7 @@ def polygon_coloring_elevation(geometry, dataset):
     """
     Model = _getModel(dataset)
 
-    print("AreaRangesElevation-originallll")
+    print("AreaRangesElevation-original")
     #print("geometry",geometry)
 
     num_ranges = 23
@@ -386,150 +386,6 @@ def polygon_coloring_elevation_modified_cmt(geometry, dataset):
     return result_geom, [min_height, max_height], avg_height
 ##End-Original - cmt - AAOR code for polygon_coloring_elevation function
 
-
-##Start-Original code for the polygon_coloring_elevation_cmt function
-def polygon_coloring_elevation_cmt(geometry, dataset):
-    """
-    Performs PostGIS query to enrich a polygon geometry.
-    
-    :param geometry: Input 2D polygon to be enriched with elevation
-    :type geometry: Shapely geometry
-    
-    :param dataset: Elevation dataset to use for querying
-    :type dataset: string
-    
-    :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
-        
-    :returns: 3D polygon as GeoJSON or WKT, range of elevation in the polygon
-    :rtype: string
-    """
-    Model = _getModel(dataset)
-
-    print("AreaRangesElevation-original-cmt")
-
-    num_ranges = 23
-    
-    if geometry.geom_type == 'Polygon':
-        query_geom = db.get_session() \
-                            .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
-                            .label('geom')) \
-                            .subquery().alias('pGeom')
-
-        result_pixels = db.get_session() \
-                            .query(func.DISTINCT(func.ST_PixelAsPolygons(
-                                func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
-                                1, False))) \
-                            .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
-                            .all()
-        print(" ")
-        #print("result_pixels",result_pixels)
-        print(" ")
-        
-        polygon_col, height_col = format_PixelAsGeoms(result_pixels)
-        #print("polygon_col \ln",polygon_col)
-        print(" ")
-        #print("height_col",height_col)
-        print(" ")
-
-        rebuilt_set = db.get_session() \
-                            .query(polygon_col.label("geometry"),
-                                   height_col.label("height")) \
-                            .subquery().alias('rebuiltSet')
-        
-        print("rebuilt_set",rebuilt_set)
-        print(" ")
-
-        filtered_set = db.get_session() \
-                            .query(rebuilt_set.c.geometry,
-                                   rebuilt_set.c.height) \
-                            .select_from(rebuilt_set) \
-                            .join(query_geom, func.ST_Within(func.ST_Centroid(rebuilt_set.c.geometry), query_geom.c.geom)) \
-                            .subquery().alias('filteredSet')
-        #print("filtered_set",filtered_set)
-        print(" ")
-
-        
-        min_height, max_height, avg_height = db.get_session() \
-                            .query(func.min(filtered_set.c.height),
-                                   func.max(filtered_set.c.height),
-                                   func.avg(filtered_set.c.height)) \
-                            .select_from(filtered_set) \
-                            .where(filtered_set.c.height != NO_DATA_VALUE) \
-                            .one()
-        
-        print("min_height",min_height)
-        print(" ")
-        print("max_height",max_height)
-        print(" ")
-        print("avg_height",avg_height)
-        print(" ")
-        
-        if min_height is None or max_height is None:
-            raise InvalidUsage(400, 4002,
-                               'The requested geometry does not contain any elevation data')
-        else:
-            range_div = (max_height - min_height + 1) / num_ranges
-            #print("range_div",range_div)
-            print(" ")
-
-            ranged_set = db.get_session() \
-                                .query(filtered_set.c.geometry,
-                                    func.GREATEST(
-                                        func.LEAST(func.floor((filtered_set.c.height - min_height) / range_div), num_ranges), -1
-                                    ).label("colorRange")) \
-                                .select_from(filtered_set) \
-                                .subquery().alias('rangedSet')
-            #print("ranged_set",ranged_set)
-            print(" ")
-
-
-            query_features = db.get_session() \
-                                .query(func.jsonb_build_object(
-                                    'type', 'Feature',
-                                    'geometry', func.ST_AsGeoJson(
-                                        func.ST_SimplifyPreserveTopology(func.ST_Union(func.array_agg(
-                                            func.ST_ReducePrecision(ranged_set.c.geometry, 1e-12)
-                                        )), 1e-12)
-                                    ).cast(JSON),
-                                    'properties', func.json_build_object(
-                                        'heightBase', case(
-                                            (ranged_set.c.colorRange < 0, NO_DATA_VALUE),
-                                            else_ = func.ceil(ranged_set.c.colorRange * range_div + min_height)
-                                        ),
-                                    )).label('features') \
-                                ).select_from(ranged_set) \
-                                .group_by(ranged_set.c.colorRange) \
-                                .subquery().alias('rfeatures')
-            #print("query_features",query_features)
-            print(" ")
-
-
-            # Return GeoJSON directly in PostGIS
-            query_final = db.get_session() \
-                                .query(func.jsonb_build_object(
-                                    'type', 'FeatureCollection',
-                                    'features', func.jsonb_agg(query_features.c.features))) \
-                                .select_from(query_features)
-            
-            #print("query_final",query_final)
-            print(" ")
-
-    else:
-        raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
-    
-    result_geom = query_final.scalar()
-    #print("result_geom",result_geom)
-    print(" ")
-
-    # Behaviour when all vertices are out of bounds
-    if result_geom == None:
-        raise InvalidUsage(404, 4002,
-                           'The requested geometry is outside the bounds of {}'.format(dataset))
-
-    return result_geom, [min_height, max_height], avg_height
-##End-Original code for the polygon_coloring_elevation_cmt function
-
-
 ##Start-Modified AAOR code for polygon_coloring_elevation function
 def polygon_coloring_elevation_modified(geometry, dataset):
     """
@@ -690,208 +546,7 @@ def polygon_coloring_elevation_modified(geometry, dataset):
     return result_geom, [min_height, max_height], avg_height
 ##End-Modified AAOR code for polygon_coloring_elevation function
 
-
-####Nuevo analisis 22oct2024
-
-#-------------Consulta 6: area grande > 900 km2 (con adyacencia)
-# CONSULTA_6 = text(
-#     """
-#     WITH query_geom AS (
-#         -- Polígono de entrada que define la zona de interés
-#         SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
-#     ),
-#     polygons AS (
-#         -- Extrae los polígonos (celdas) y el valor de elevación del raster que intersectan con el polígono de entrada
-#         SELECT 
-#             (ST_PixelAsPolygons(
-#                 ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-#                 1, False
-#             )).geom AS geometry,  -- Extrae las celdas como geometría
-#             (ST_PixelAsPolygons(
-#                 ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-#                 1, False
-#             )).val AS height  -- Extrae el valor de elevación
-#         FROM query_geom 
-#         JOIN oes_cgiar 
-#         ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
-#     ),
-#     grouped AS (
-#         -- Agrupa los polígonos adyacentes con la misma altura
-#         SELECT 
-#             height,
-#             ST_Union(geometry) AS geometry
-#         FROM polygons p1
-#         WHERE EXISTS (
-#             SELECT 1
-#             FROM polygons p2
-#             WHERE 
-#                 p1.height = p2.height 
-#                 AND ST_Touches(p1.geometry, p2.geometry)
-#         )
-#         GROUP BY height
-        
-#         UNION ALL  -- Incluye todos los polígonos que no son adyacentes
-#         SELECT 
-#             height,
-#             geometry
-#         FROM polygons p1
-#         WHERE NOT EXISTS (
-#             SELECT 1
-#             FROM polygons p2
-#             WHERE 
-#                 p1.height = p2.height 
-#                 AND ST_Touches(p1.geometry, p2.geometry)
-#         )
-#     )
-
-#     -- Genera el resultado en formato GeoJSON
-#     SELECT jsonb_build_object(
-#         'type', 'FeatureCollection',
-#         'features', jsonb_agg(jsonb_build_object(
-#             'type', 'Feature',
-#             'geometry', ST_AsGeoJSON(geometry),
-#             'properties', json_build_object(
-#                 'heightBase', height
-#             )
-#         ))
-#     ) AS features_collection, 
-#     MIN(height) AS min_height, 
-#     MAX(height) AS max_height, 
-#     AVG(height) AS avg_height
-#     FROM grouped;
-#     """
-# )
-
-#####---------->Consulta que no incluye tilas con alturas igual a cero
-CONSULTA_6 = text(
-    """
-    WITH query_geom AS (
-    -- Polígono de entrada que define la zona de interés
-    SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
-),
-polygons AS (
-    -- Extrae los polígonos (celdas) y el valor de elevación del raster que intersectan con el polígono de entrada
-    SELECT 
-        (ST_PixelAsPolygons(
-            ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-            1, False
-        )).geom AS geometry,  -- Extrae las celdas como geometría
-        (ST_PixelAsPolygons(
-            ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-            1, False
-        )).val AS height  -- Extrae el valor de elevación
-    FROM query_geom 
-    JOIN oes_cgiar 
-    ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
-),
-filtered_polygons AS (
-    -- Filtrar los polígonos que tienen altura distinta de cero
-    SELECT * 
-    FROM polygons 
-    WHERE height != 0
-),
-grouped AS (
-    -- Agrupa los polígonos adyacentes con la misma altura
-    SELECT 
-        height,
-        ST_Union(geometry) AS geometry
-    FROM filtered_polygons p1
-    WHERE EXISTS (
-        SELECT 1
-        FROM filtered_polygons p2
-        WHERE 
-            p1.height = p2.height 
-            AND ST_Touches(p1.geometry, p2.geometry)
-    )
-    GROUP BY height
-    
-    UNION ALL  -- Incluye todos los polígonos que no son adyacentes
-    SELECT 
-        height,
-        geometry
-    FROM filtered_polygons p1
-    WHERE NOT EXISTS (
-        SELECT 1
-        FROM filtered_polygons p2
-        WHERE 
-            p1.height = p2.height 
-            AND ST_Touches(p1.geometry, p2.geometry)
-    )
-)
-
--- Genera el resultado en formato GeoJSON
-SELECT jsonb_build_object(
-    'type', 'FeatureCollection',
-    'features', jsonb_agg(jsonb_build_object(
-        'type', 'Feature',
-        'geometry', ST_AsGeoJSON(geometry),
-        'properties', json_build_object(
-            'heightBase', height
-        )
-    ))
-) AS features_collection, 
-MIN(height) AS min_height, 
-MAX(height) AS max_height, 
-AVG(height) AS avg_height
-FROM grouped;
-
-    """
-)
-
-# Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
-def polygon_coloring_elevation_consulta_6(geometry, dataset):
-    """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
-    print("-------------Consulta 6: área grande > 900 km2 (con adyacencia)")
-    
-    #Poligono de prueba para un area grande-->mas de 900km2
-    #polygon = 'POLYGON((-3.41314 40.4762, -3.289893 40.4762, -3.289893 40.91916, -3.41314 40.91916, -3.41314 40.4762))'
-    #print("polygon", polygon)
-
-    #proceso geometry que es el poligono entrante
-    #print("polygon", geometry)
-    polygon = f"{geometry}"
-    print("polygon", polygon)
-
-
-    # Obtener la sesión de la base de datos
-    session = db.get_session()
-
-    # Ejecutar la consulta con el polígono como parámetro
-    try:
-        inicio = time.perf_counter()
-        result = session.execute(CONSULTA_6, {"polygon": polygon})
-        fin = time.perf_counter()
-        print(f"Tiempo de ejecución: {fin - inicio:.6f} segundos")
-
-        # Obtener un solo resultado (dado que estamos esperando un único GeoJSON y estadísticas)
-        row = result.fetchone()
-
-        if row:
-            # Desempaquetar los resultados: features_collection, min_height, max_height, avg_height
-            features_collection, min_height, max_height, avg_height = row
-            #features_collection = row
-
-            # Imprimir o retornar los resultados
-            #print("GeoJSON Features Collection:", features_collection)
-
-            with open("salida_agrupada_area_20_tilas.json", "w") as archivo:
-                json.dump(features_collection, archivo, indent=4) 
-
-            # print("Min Height:", min_height)
-            # print("Max Height:", max_height)
-            # print("Avg Height:", avg_height)
-        else:
-            print("No se devolvieron resultados.")
-
-    except Exception as e:
-        print(f"Error al ejecutar la consulta: {e}")
-
-    # Retornar el objeto en formato JSON
-    return features_collection, [min_height, max_height], avg_height
-#-------------Fin Consulta 6: area grande > 900 km2 (con adyacencia)
-
-
-#####--------->Consulta 7: area grande > 900 km2 (sin adyacencia)
+#####--------->Consulta 7: (sin adyacencia)
 # CONSULTA_7 = text(
 #     """
 #     WITH query_geom AS (
@@ -1200,12 +855,12 @@ def procesar_union(entrada):
 ####--->Función paralelizada para agrupar tilas por altura
 def agrupar_tilas_por_altura_paralelo(datos, num_procesos=12, chunk_size=5):
     #print(datos)
-    print(" ")
+    #print(" ")
     agrupaciones = {}
-    print(len(agrupaciones))
+    # print(len(agrupaciones))
 
-    cantidad_features = len(datos["features"])
-    print(f"La cantidad de features es: {cantidad_features}")
+    # cantidad_features = len(datos["features"])
+    # print(f"La cantidad de features es: {cantidad_features}")
     
     for feature in datos["features"]:
         altura = feature["properties"]["heightBase"]
@@ -1217,9 +872,9 @@ def agrupar_tilas_por_altura_paralelo(datos, num_procesos=12, chunk_size=5):
         
         agrupaciones[altura].append(poligono)
     
-    print(" ")
-    print("agrupaciones",len(agrupaciones))
-    print(" ")
+    # print(" ")
+    # print("agrupaciones",len(agrupaciones))
+    # print(" ")
     #print("agrupaciones",agrupaciones)
     entradas = [(altura, poligonos) for altura, poligonos in agrupaciones.items()]
     
@@ -1259,10 +914,10 @@ def agrupar_tilas_por_altura_multiprocessing(datos):
 
 def agrupar_tilas_por_altura_paralelo_modificada(datos, num_procesos=12, chunk_size=5):
     #print(datos)
-    print("Entre a agrupar_tilas_por_altura_paralelo_modificada ")
-    cantidad_features = len(datos["features"])
-    print(f"La cantidad de features es: {cantidad_features}")
-    print(" ")
+    # print("Entre a agrupar_tilas_por_altura_paralelo_modificada ")
+    # cantidad_features = len(datos["features"])
+    # print(f"La cantidad de features es: {cantidad_features}")
+    # print(" ")
     
     
     ######Sustitucion
@@ -1287,9 +942,9 @@ def agrupar_tilas_por_altura_paralelo_modificada(datos, num_procesos=12, chunk_s
     ######sustitucion por
 
     resultados_multiprocessing = agrupar_tilas_por_altura_multiprocessing(datos)
-    print(" ")
-    print("resultados_multiprocessing",len(resultados_multiprocessing))
-    print(" ")
+    # print(" ")
+    # print("resultados_multiprocessing",len(resultados_multiprocessing))
+    # print(" ")
 
     ######por
     
@@ -1465,7 +1120,7 @@ def polygon_coloring_elevation_consulta_7(geometry, dataset):
             ##2
             # Usar la versión paralelizada de la función para agrupar las tilas por altura
             inicio_agrupacion = time.perf_counter()
-            features_collection = agrupar_tilas_por_altura_paralelo(features_collection, num_procesos=4, chunk_size=5)
+            features_collection = agrupar_tilas_por_altura_paralelo(features_collection, num_procesos=8, chunk_size=5)
             #features_collection = agrupar_tilas_por_altura_paralelo_modificada(features_collection, num_procesos=4, chunk_size=5)
            
             fin_agrupacion = time.perf_counter()

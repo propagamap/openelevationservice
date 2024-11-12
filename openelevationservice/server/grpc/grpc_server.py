@@ -11,15 +11,27 @@ from shapely import wkt
 
 #AAOR-Import
 import time
-from openelevationservice.server.api import direct_queries_hanli_multiple_valores
-from openelevationservice.server.api import direct_queries_hanli_multiple_valores_modificada_hanli_cmt
-from openelevationservice.server.api import direct_queries_hanli_multiple_valores_original_hanli_cmt
-from openelevationservice.server.api import direct_queries_db_aaor
-from openelevationservice.server.api import direct_queries_db_aaor_funciona_1_10Oct2024
 import sys
 #from openelevationservice.server.api import direct_queries_hanli
 import json
 #AAOR-Fin Import
+
+
+### Function to calculate the size of the generated file
+def calculate_size(obj):
+    # Measure the size in bytes of the JSON string
+    size_in_bytes = sys.getsizeof(obj)
+
+    # Convert to kilobytes (KB)
+    size_in_kb = size_in_bytes / 1024
+
+    # Convert to megabytes (MB)
+    size_in_mb = size_in_bytes / (1024 * 1024)
+
+    print(f"File size to transfer from OES to the Frontend in KB: {size_in_kb:.2f} KB")
+    print(f"File size to transfer from OES to the Frontend in MB: {size_in_mb:.2f} MB")       
+### End Function to calculate the size of the generated file
+
 
 ###Función para calcular el tamaño del archivo generado
 def calcular_peso(objeto):
@@ -33,8 +45,7 @@ def calcular_peso(objeto):
     tamano_en_megas = tamano_en_bytes / (1024 * 1024)
 
     print(f"Tamaño del archivo a transferir desde OES al Frontend en KB: {tamano_en_kb:.2f} KB")
-    print(f"Tamaño del archivo a transferir desde OES al Frontend en MB: {tamano_en_megas:.2f} MB")
-            
+    print(f"Tamaño del archivo a transferir desde OES al Frontend en MB: {tamano_en_megas:.2f} MB")       
 ###Fin Función para calcular el tamaño del archivo generado
 
 
@@ -132,7 +143,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             ))
         
         return defs.AreaPointsResponse(points=result)
- ##End-Modified AAOR code for AreaPointsElevation function
+    ##End-Modified AAOR code for AreaPointsElevation function
     
     
     def _create_proto_geo_polygon(self, coordinates):
@@ -145,7 +156,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             ]) for bondary in coordinates            
         ])
 
-    ####################### Nuevo analisis paralelización 03102024 ##################
+    ####################### New Parallelization Analysis 03Oct2024 ##################
 
     #####---->    (1)   ######
     
@@ -153,20 +164,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     @handle_exceptions
     def AreaRangesElevation_(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
-        print("geom",geom)
-        print("polygon_coloring_elevation_originallL")
-        #print("collection_queried",collection_queried)
-        inicio = time.perf_counter()
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
-        fin = time.perf_counter()
-        print(f"Tiempo de ejecución: {fin - inicio:.6f} segundos")
-        #print("collection_queried",collection_queried)
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_modified_cmt(geom, 'srtm')
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_cmt(geom, 'srtm')
-
-        # with open("salida_codigo_original_area_aprox_46km2_postman.json", "w") as archivo:
-        #     json.dump(collection_queried, archivo, indent=4)  
-                 
+        
         result = []
         for feature in collection_queried['features']:
             heightBase = int(feature['properties']['heightBase'])
@@ -190,144 +189,27 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         )
     ###End-Original code for the AreaRangesElevation function
 
-    # #####---->    (2)   ######
+    #####---->    (2)   ######
 
-    ###Start-Analisis adaptación Hanlin code for the AreaRangesElevation function
-    @handle_exceptions
-    def AreaRangesElevation_(self, request, context):
-        geom = convert.polygon_to_geometry(self._format_area_request(request))
-        print("geom",geom)
-        print("polygon_coloring_elevation_based_hanli_1")
-        #print("collection_queried",collection_queried)
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_based_hanli_1(geom, 'srtm')
-
-        with open("salida_codigo_based_hanli_1_area_aprox_46km2_mapa_propamap.json", "w") as archivo:
-            json.dump(collection_queried, archivo, indent=4)  
-
-        result = []
-        for feature in collection_queried['features']:
-            heightBase = int(feature['properties']['height'])
-            if feature['geometry']['type'] == 'Polygon':
-                result.append(defs.UnitedArea(
-                    baseElevation=heightBase,
-                    area=self._create_proto_geo_polygon(feature['geometry']['coordinates']),
-                ))
-            else:
-                for polygon in feature['geometry']['coordinates']:
-                    result.append(defs.UnitedArea(
-                        baseElevation=heightBase,
-                        area=self._create_proto_geo_polygon(polygon),
-                    ))
-
-        return defs.AreaRangesResponse(
-            unions=result,
-            minElevation=int(range_queried[0]),
-            maxElevation=int(range_queried[1]),
-            avgElevation=avg_queried,
-        )
-
-    ##End--Analisis adaptación Hanlin code for the AreaRangesElevation function
-
-    #####---->    (8)   ######
-    
-    ###Start-prueba de conexion a BBDD
-    @handle_exceptions
-    def AreaRangesElevation__(self, request, context):
-        geom = convert.polygon_to_geometry(self._format_area_request(request))
-        print(" ")
-        print("Lanzando conexión directa a BBDD")
-        print(" ")
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
-        #collection_queried, range_queried, avg_queried = direct_queries_db_aaor.main(geom)
-        collection_queried, range_queried, avg_queried = direct_queries_db_aaor_funciona_1_10Oct2024.main(geom)
-        result = []
-        for feature in collection_queried['features']:
-            heightBase = int(feature['properties']['heightBase'])
-            if feature['geometry']['type'] == 'Polygon':
-                result.append(defs.UnitedArea(
-                    baseElevation=heightBase,
-                    area=self._create_proto_geo_polygon(feature['geometry']['coordinates']),
-                ))
-            else:
-                for polygon in feature['geometry']['coordinates']:
-                    result.append(defs.UnitedArea(
-                        baseElevation=heightBase,
-                        area=self._create_proto_geo_polygon(polygon),
-                    ))
-        
-        return defs.AreaRangesResponse(
-            unions=result,
-            minElevation=range_queried[0],
-            maxElevation=range_queried[1],
-            avgElevation=avg_queried,
-        )
-    ####################### FIN - Nuevo analisis 03102024 ##################
-
-
-    ##########Nuevo analisis 22oct2024
-    
-    ##########CONSULTA_6
-    @handle_exceptions
-    def AreaRangesElevation_(self, request, context):
-        geom = convert.polygon_to_geometry(self._format_area_request(request))
-        #print("geom",geom)
-        print("-------------polygon_coloring_elevation_consulta_6-->(con adyacencia)")
-       
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_6(geom, 'srtm')
-        # print("collection_queried",collection_queried)
-        # print("range_queried[0]",range_queried[0])
-        # print("range_queried[1]",range_queried[1])
-        # print("avg_queried",avg_queried)
-        
-        # with open("salida_codigo_original_area_aprox_46km2_postman.json", "w") as archivo:
-        #     json.dump(collection_queried, archivo, indent=4)  
-                 
-        result = []
-        for feature in collection_queried['features']:
-            geometry = json.loads(feature['geometry'])
-            heightBase = int(feature['properties']['heightBase'])
-            if geometry['type'] == 'Polygon':
-                result.append(defs.UnitedArea(
-                    baseElevation=heightBase,
-                    area=self._create_proto_geo_polygon(geometry['coordinates']),
-                ))
-            else:
-                for polygon in geometry['coordinates']:
-                    result.append(defs.UnitedArea(
-                        baseElevation=heightBase,
-                        area=self._create_proto_geo_polygon(polygon),
-                    ))
-        
-        return defs.AreaRangesResponse(
-            unions=result,
-            minElevation=int(range_queried[0]),
-            maxElevation=int(range_queried[1]),
-            avgElevation=avg_queried,
-        )
-
-    ##########CONSULTA_7
+    ###Start-QUERY_7
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
-        print(" ")
-        print("request",request)
+        # print(" ")
+        # print("request",request)
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         print(" ")
         #print("geom",geom)
-        print("-------------polygon_coloring_elevation_consulta_7-->(sin adyacencia)")
+        print("-------------polygon_coloring_elevation_query_7-->(Without Adjacency)")
         inicio = time.perf_counter()
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7(geom, 'srtm')
         fin = time.perf_counter()
-        print(f"Tiempo de ejecución collection_queried y otros valores: {fin - inicio:.6f} segundos")#collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_con_explain_analize(geom, 'srtm')
+        print(f"Tiempo de ejecución collection_queried y otros valores: {fin - inicio:.6f} segundos")
+        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_con_explain_analize(geom, 'srtm')
         #print("collection_queried",collection_queried)
         # print("range_queried[0]",range_queried[0])
         # print("range_queried[1]",range_queried[1])
         # print("avg_queried",avg_queried)
-        
-  
-        with open("salida_codigo_consulta_7_area_aprox_pitopito.json", "w") as archivo:
-             json.dump(collection_queried, archivo, indent=4)  
-
-                 
+             
         inicio_result = time.perf_counter()
         result = []
         for feature in collection_queried['features']:
@@ -348,9 +230,10 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         fin_result = time.perf_counter()
         print(f"Tiempo de ejecución_result: {fin_result - inicio_result:.6f} segundos")
 
-        ##medir tamaño del archivo a transportar
-        calcular_peso(result)
-        ##Fin medir tamaño del archivo a transportar
+        ###Star-Measure file size to transfer
+        calculate_size(result)
+        ###End-Measure file size to transfer
+
 
         return defs.AreaRangesResponse(
             unions=result,
@@ -358,15 +241,15 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             maxElevation=int(range_queried[1]),
             avgElevation=avg_queried,
 )
+    ###End-QUERY_7
+    #####END New Parallelization Analysis 03Oct2024
 
-    #####Fin nuevo analisis 22oct2024
-
-    ###Start-Original code for the AreaRangesElevation function
+    ###Start-Original-modified-cmt code for the AreaRangesElevation function
     @handle_exceptions
     def AreaRangesElevation_(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
-        print(" ")
-        print("geom",geom)
+        # print(" ")
+        # print("geom",geom)
         print("polygon_coloring_elevation_originallL")
         #print("collection_queried",collection_queried)
         inicio = time.perf_counter()
@@ -376,9 +259,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         #print("collection_queried",collection_queried)
         #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_modified_cmt(geom, 'srtm')
         #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_cmt(geom, 'srtm')
-
-        with open("salida_codigo_original_area_aprox_46km2_emp.json", "w") as archivo:
-            json.dump(collection_queried, archivo, indent=4)  
 
         inicio_result = time.perf_counter()         
         result = []
@@ -398,9 +278,9 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         fin_result = time.perf_counter()
         print(f"Tiempo de ejecución_result: {fin_result - inicio_result:.6f} segundos")
 
-        ##medir tamaño del archivo a transportar
-        calcular_peso(result)
-        ##Fin medir tamaño del archivo a transportar
+        ###Star-Measure file size to transfer
+        calculate_size(result)
+        ###End-Measure file size to transfer
 
         
         return defs.AreaRangesResponse(
@@ -409,7 +289,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             maxElevation=range_queried[1],
             avgElevation=avg_queried,
         )
-    ###End-Original code for the AreaRangesElevation function
+    ###End-Original-modified-cmt code for the AreaRangesElevation function
 
 
 def grpc_serve(port_url):
