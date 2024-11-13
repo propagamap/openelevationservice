@@ -173,219 +173,6 @@ def polygon_coloring_elevation(geometry, dataset):
 
 ##End-Original code for the polygon_coloring_elevation function
 
-##Start-Original - cmt - AAOR code for polygon_coloring_elevation function
-def polygon_coloring_elevation_modified_cmt(geometry, dataset):
-    """
-    Performs PostGIS query to enrich a polygon geometry.
-    
-    :param geometry: Input 2D polygon to be enriched with elevation
-    :type geometry: Shapely geometry
-    
-    :param dataset: Elevation dataset to use for querying
-    :type dataset: string
-    
-    :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
-        
-    :returns: 3D polygon as GeoJSON or WKT, range of elevation in the polygon
-    :rtype: string
-    """
-    inicio_consulta_queried_0 = time.perf_counter()#AAOR
-    Model = _getModel(dataset)
-
-    print("AreaRangesElevation-originallll-modified - cmt")
-    fin_consulta_queried_0 = time.perf_counter()#AAOR
-    tiempo_transcurrido_consulta_queried_0 = fin_consulta_queried_0 - inicio_consulta_queried_0#AAOR
-    print(f"Tiempo de ejecución_consulta_queried_0: {tiempo_transcurrido_consulta_queried_0:.6f} segundos")#AAOR
-    print(" ")
-
-    num_ranges = 23
-    
-    if geometry.geom_type == 'Polygon':
-
-        inicio_consulta_queried_1 = time.perf_counter()#AAOR 
-        query_geom = db.get_session() \
-                            .query(func.ST_SetSRID(func.ST_PolygonFromText(geometry.wkt), 4326) \
-                            .label('geom')) \
-                            .subquery().alias('pGeom')
-        
-        fin_consulta_queried_1 = time.perf_counter()#AAOR
-        tiempo_transcurrido_consulta_queried_1 = fin_consulta_queried_1 - inicio_consulta_queried_1#AAOR
-        print(f"Tiempo de ejecución_consulta_queried_1: {tiempo_transcurrido_consulta_queried_1:.6f} segundos")#AAOR
-        #print("query_geom",query_geom)
-        print(" ")
-
-        inicio_consulta_queried_2 = time.perf_counter()#AAOR 
-        result_pixels = db.get_session() \
-                            .query(func.DISTINCT(func.ST_PixelAsPolygons(
-                                func.ST_Clip(Model.rast, query_geom.c.geom, NO_DATA_VALUE),
-                                1, False))) \
-                            .select_from(query_geom.join(Model, ST_Intersects(Model.rast, query_geom.c.geom))) \
-                            .all()
-        fin_consulta_queried_2 = time.perf_counter()#AAOR
-        tiempo_transcurrido_consulta_queried_2 = fin_consulta_queried_2 - inicio_consulta_queried_2#AAOR
-        print(f"Tiempo de ejecución_consulta_queried_2: {tiempo_transcurrido_consulta_queried_2:.6f} segundos")#AAOR
-        #print("result_pixels",result_pixels)
-        print(" ")
-
-        #OJOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-        # Inicializamos el contador para los valores -32768
-        contador_negativos = 0
-
-        # Recorrer los píxeles originales para extraer valores y filtrar duplicados
-        for pixel in result_pixels:
-            # Eliminar los paréntesis y dividir por comas
-            parts = pixel[0].strip('()').split(',')
-            
-            # Extraer los valores 1, 2, 3 y 4
-            val1 = parts[0]  # Valor en la posición 1 (WKT text)
-            val2 = int(parts[1].strip())  # Convertir a entero el valor en la posición 2 (número entero)
-            
-            # Verificar si el valor de altura es igual a -32768
-            if val2 == -32768:
-                contador_negativos += 1  # Aumentar el contador
-                continue  # Saltar este pixel y continuar con el siguiente
-                
-            val3 = int(parts[2].strip())  # Valor en la posición 3 (número entero)
-            val4 = int(parts[3].strip())  # Valor en la posición 4 (número entero)
-
-        # Mostrar cuántos valores -32768 se encontraron
-        print(f"Se encontraron {contador_negativos} valores de -32768.")
-        #Fin OJOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-        
-        
-        inicio_consulta_queried_3 = time.perf_counter()#AAOR 
-        #polygon_col, height_col = format_PixelAsGeoms(resultado_final)
-        polygon_col, height_col = format_PixelAsGeoms(result_pixels)
-        fin_consulta_queried_3 = time.perf_counter()#AAOR
-        tiempo_transcurrido_consulta_queried_3 = fin_consulta_queried_3 - inicio_consulta_queried_3#AAOR
-        print(f"Tiempo de ejecución_consulta_queried_3: {tiempo_transcurrido_consulta_queried_3:.6f} segundos")#AAOR
-        #print("polygon_col",polygon_col)
-        print(" ")
-        print("height_col",height_col)
-        print(" ")
-
-        inicio_consulta_queried_4 = time.perf_counter()#AAOR 
-        rebuilt_set = db.get_session() \
-                            .query(polygon_col.label("geometry"),
-                                   height_col.label("height")) \
-                            .subquery().alias('rebuiltSet')
-        fin_consulta_queried_4 = time.perf_counter()#AAOR
-        tiempo_transcurrido_consulta_queried_4 = fin_consulta_queried_4 - inicio_consulta_queried_4#AAOR
-        print(f"Tiempo de ejecución_consulta_queried_4: {tiempo_transcurrido_consulta_queried_4:.6f} segundos")#AAOR
-        #print("rebuilt_set",rebuilt_set)
-        print(" ")
-
-        inicio_consulta_queried_5 = time.perf_counter()#AAOR 
-        filtered_set = db.get_session() \
-                            .query(rebuilt_set.c.geometry,
-                                   rebuilt_set.c.height) \
-                            .select_from(rebuilt_set) \
-                            .join(query_geom, func.ST_Within(func.ST_Centroid(rebuilt_set.c.geometry), query_geom.c.geom)) \
-                            .subquery().alias('filteredSet')
-        fin_consulta_queried_5 = time.perf_counter()#AAOR
-        tiempo_transcurrido_consulta_queried_5 = fin_consulta_queried_5 - inicio_consulta_queried_5#AAOR
-        print(f"Tiempo de ejecución_consulta_queried_5: {tiempo_transcurrido_consulta_queried_5:.6f} segundos")#AAOR
-        #print("rebuilt_set",rebuilt_set)
-        print(" ")
-        
-        inicio_consulta_queried_6 = time.perf_counter()#AAOR 
-        min_height, max_height, avg_height = db.get_session() \
-                            .query(func.min(filtered_set.c.height),
-                                   func.max(filtered_set.c.height),
-                                   func.avg(filtered_set.c.height)) \
-                            .select_from(filtered_set) \
-                            .where(filtered_set.c.height != NO_DATA_VALUE) \
-                            .one()
-        fin_consulta_queried_6 = time.perf_counter()#AAOR
-        tiempo_transcurrido_consulta_queried_6 = fin_consulta_queried_6 - inicio_consulta_queried_6#AAOR
-        print(f"Tiempo de ejecución_consulta_queried_6: {tiempo_transcurrido_consulta_queried_6:.6f} segundos")#AAOR
-        #print("min_height",min_height)
-        print(" ")
-        #print("max_height",max_height)
-        #print(" ")
-        #print("avg_height",avg_height)
-        #print(" ")
-        
-        
-        if min_height is None or max_height is None:
-            raise InvalidUsage(400, 4002,
-                               'The requested geometry does not contain any elevation data')
-        else:
-            inicio_consulta_queried_7 = time.perf_counter()#AAOR 
-            range_div = (max_height - min_height + 1) / num_ranges
-            fin_consulta_queried_7 = time.perf_counter()#AAOR
-            tiempo_transcurrido_consulta_queried_7 = fin_consulta_queried_7 - inicio_consulta_queried_7#AAOR
-            print(f"Tiempo de ejecución_consulta_queried_7: {tiempo_transcurrido_consulta_queried_7:.6f} segundos")#AAOR
-
-            
-            inicio_consulta_queried_8 = time.perf_counter()#AAOR 
-            ranged_set = db.get_session() \
-                                .query(filtered_set.c.geometry,
-                                    func.GREATEST(
-                                        func.LEAST(func.floor((filtered_set.c.height - min_height) / range_div), num_ranges), -1
-                                    ).label("colorRange")) \
-                                .select_from(filtered_set) \
-                                .subquery().alias('rangedSet')
-            fin_consulta_queried_8 = time.perf_counter()#AAOR
-            tiempo_transcurrido_consulta_queried_8 = fin_consulta_queried_8 - inicio_consulta_queried_8#AAOR
-            print(f"Tiempo de ejecución_consulta_queried_8: {tiempo_transcurrido_consulta_queried_8:.6f} segundos")#AAOR
-
-            inicio_consulta_queried_9 = time.perf_counter()#AAOR 
-            query_features = db.get_session() \
-                                .query(func.jsonb_build_object(
-                                    'type', 'Feature',
-                                    'geometry', func.ST_AsGeoJson(
-                                        func.ST_SimplifyPreserveTopology(func.ST_Union(func.array_agg(
-                                            func.ST_ReducePrecision(ranged_set.c.geometry, 1e-12)
-                                        )), 1e-12)
-                                    ).cast(JSON),
-                                    'properties', func.json_build_object(
-                                        'heightBase', case(
-                                            (ranged_set.c.colorRange < 0, NO_DATA_VALUE),
-                                            else_ = func.ceil(ranged_set.c.colorRange * range_div + min_height)
-                                        ),
-                                    )).label('features') \
-                                ).select_from(ranged_set) \
-                                .group_by(ranged_set.c.colorRange) \
-                                .subquery().alias('rfeatures')
-            fin_consulta_queried_9 = time.perf_counter()#AAOR
-            tiempo_transcurrido_consulta_queried_9 = fin_consulta_queried_9 - inicio_consulta_queried_9#AAOR
-            print(f"Tiempo de ejecución_consulta_queried_9: {tiempo_transcurrido_consulta_queried_9:.6f} segundos")#AAOR
-            print("query_features",query_features)
-            print(" ")
-
-            # Return GeoJSON directly in PostGIS
-            inicio_consulta_queried_10 = time.perf_counter()#AAOR 
-            query_final = db.get_session() \
-                                .query(func.jsonb_build_object(
-                                    'type', 'FeatureCollection',
-                                    'features', func.jsonb_agg(query_features.c.features))) \
-                                .select_from(query_features)
-            fin_consulta_queried_10 = time.perf_counter()#AAOR
-            tiempo_transcurrido_consulta_queried_10 = fin_consulta_queried_10 - inicio_consulta_queried_10#AAOR
-            print(f"Tiempo de ejecución_consulta_queried_10: {tiempo_transcurrido_consulta_queried_10:.6f} segundos")#AAOR
-            #print("query_final",query_final)
-            print(" ")
-
-    else:
-        raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
-    
-    inicio_consulta_queried_11 = time.perf_counter()#AAOR 
-    result_geom = query_final.scalar()
-    fin_consulta_queried_11 = time.perf_counter()#AAOR
-    tiempo_transcurrido_consulta_queried_11 = fin_consulta_queried_11 - inicio_consulta_queried_11#AAOR
-    print(f"Tiempo de ejecución_consulta_queried_11: {tiempo_transcurrido_consulta_queried_11:.6f} segundos")#AAOR
-    print("result_geom",result_geom)
-
-
-    # Behaviour when all vertices are out of bounds
-    if result_geom == None:
-        raise InvalidUsage(404, 4002,
-                           'The requested geometry is outside the bounds of {}'.format(dataset))
-
-    return result_geom, [min_height, max_height], avg_height
-##End-Original - cmt - AAOR code for polygon_coloring_elevation function
-
 ##Start-Modified AAOR code for polygon_coloring_elevation function
 def polygon_coloring_elevation_modified(geometry, dataset):
     """
@@ -546,49 +333,11 @@ def polygon_coloring_elevation_modified(geometry, dataset):
     return result_geom, [min_height, max_height], avg_height
 ##End-Modified AAOR code for polygon_coloring_elevation function
 
+
+
 #####--------->Consulta 7: (sin adyacencia)
-# CONSULTA_7 = text(
-#     """
-#     WITH query_geom AS (
-#     -- Polígono de entrada que define la zona de interés
-#     SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
-# ),
-# polygons AS (
-#     -- Extrae las celdas raster (polígonos) y el valor de elevación dentro del área de interés
-#     SELECT 
-#         (ST_PixelAsPolygons(
-#             ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-#             1, False
-#         )).geom AS geometry,  -- Extrae las celdas como geometría
-#         (ST_PixelAsPolygons(
-#             ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-#             1, False
-#         )).val AS height  -- Extrae el valor de elevación
-#     FROM query_geom 
-#     JOIN oes_cgiar 
-#     ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
-# )
-
-# -- Genera el resultado en formato GeoJSON sin agrupar
-# SELECT jsonb_build_object(
-#     'type', 'FeatureCollection',
-#     'features', jsonb_agg(jsonb_build_object(
-#         'type', 'Feature',
-#         'geometry', ST_AsGeoJSON(geometry),
-#         'properties', json_build_object(
-#             'heightBase', height
-#         )
-#     ))
-# ) AS features_collection, 
-# MIN(height) AS min_height, 
-# MAX(height) AS max_height, 
-# AVG(height) AS avg_height
-# FROM polygons;
-
-#     """
-# )
-
-##########Se filtran las tilas con alturas iguales a cero
+####Sección(1):La consulta
+###Start-Código de la consulta-->Se filtran las tilas con alturas iguales a cero. Todas las funciones llaman este query
 CONSULTA_7 = text(
     """
     WITH query_geom AS (
@@ -633,7 +382,12 @@ FROM polygons;
 
     """
 )
+###End-Código de la consulta-->Se filtran las tilas con alturas iguales a cero. Todas las funciones llaman este query
+####End-Sección(1)
 
+####Sección(2):Las funciones
+
+###(F1)
 ###--->Función que no_clasifica elevaciones por rango_para pruebas
 def no_classify_elevation(features_collection):
          
@@ -665,8 +419,12 @@ def no_classify_elevation(features_collection):
     return classified_features
 ###--->Fin Función que no_clasifica elevaciones por rango_para pruebas
 
+
+###(F2)
 ###funciones usadas para clasificar elevaciones paralelizando
-###libreria multiprocessing
+
+###libreria multiprocessing 
+###funcion auxiliar que clasifica caracteristicas -> es llamada por classify_elevation_parallel_multiprocessing
 def classify_feature_multiprocessing(feature, min_height, max_height, range_div, no_data_value, num_ranges):
     height = feature['properties']['heightBase']
     
@@ -722,7 +480,7 @@ def classify_elevation_parallel_multiprocessing(features_collection, min_height,
 ###fin libreria multiprocessing
 
 ###Libreria consurrent
-#Función de clasificación de elevación para cada feature individual
+###funcion auxiliar que clasifica caracteristicas -> es llamada por classify_elevation_parallel_consurrent
 def classify_feature_consurrent(feature, min_height, max_height, range_div, no_data_value, num_ranges):
     height = feature['properties']['heightBase']
     
@@ -781,7 +539,7 @@ def classify_elevation_parallel_consurrent(features_collection, min_height, max_
 ###Fin libreria concurrnt
 #Fin funciones usadas para clasificar elevaciones paralelizando
 
-
+###(F3)
 ###--->Función que clasifica elevaciones por rango
 def classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
     
@@ -828,6 +586,7 @@ def classify_elevation(features_collection, min_height, max_height, num_ranges=2
     return classified_features
 ###--->Fin Función que clasifica elevaciones por rango
 
+###(F4)
 ####--->Función que agrupa datos paralelizando
 # Función para procesar la unión de polígonos
 def procesar_union(entrada):
@@ -852,6 +611,7 @@ def procesar_union(entrada):
     return nuevas_features
 ####--->Fin Función que agrupa datos paralelizando
 
+###(F5)
 ####--->Función paralelizada para agrupar tilas por altura
 def agrupar_tilas_por_altura_paralelo(datos, num_procesos=12, chunk_size=5):
     #print(datos)
@@ -895,6 +655,7 @@ def agrupar_tilas_por_altura_paralelo(datos, num_procesos=12, chunk_size=5):
     return datos_agrupados
 ####--->Fin Función paralelizada para agrupar tilas por altura
 
+###(F6)
 ####--->Función paralelizada para agrupar tilas por altura modificada
 # Función de procesamiento de cada feature
 def procesar_feature(feature):
@@ -968,7 +729,7 @@ def agrupar_tilas_por_altura_paralelo_modificada(datos, num_procesos=12, chunk_s
 ####--->Fin Función paralelizada para agrupar tilas por altura modificada
 
 
-####--->Función respaldo paralelizada para agrupar tilas por altura
+####--->respaldo Función paralelizada para agrupar tilas por altura
 def agrupar_tilas_por_altura_paralelo_respaldo(datos, num_procesos=12, chunk_size=5):
     agrupaciones = {}
     
@@ -1000,7 +761,7 @@ def agrupar_tilas_por_altura_paralelo_respaldo(datos, num_procesos=12, chunk_siz
     }
 
     return datos_agrupados
-####--->Fin respaldo Función paralelizada para agrupar tilas por altura
+####--->respaldo Fin Función paralelizada para agrupar tilas por altura
 
 ####--->Función de agrupacion de datos
 def agrupar_tilas_por_altura(datos):
@@ -1040,6 +801,11 @@ def agrupar_tilas_por_altura(datos):
 
     return datos_agrupados
 ####--->Fin Función de agrupacion de datos
+
+####End-Sección(2):Las funciones
+
+
+####Start-Sección(3):Funciones principales-alias de->polygon_coloring_elevation_consulta_7
 
 # Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
 def polygon_coloring_elevation_consulta_7(geometry, dataset):
@@ -1083,18 +849,21 @@ def polygon_coloring_elevation_consulta_7(geometry, dataset):
             # with open("salida_sin_agrupar_crudos_area_200km2.json", "w") as archivo:
             #     json.dump(features_collection, archivo, indent=4)  
 
+            ##0-->Codigo que renderiza tilas sin agrupamiento
             # Función que no claifica --> no_classify_elevation
             # inicio_no_clasifica_elevaciones = time.perf_counter()
-            # features_collection=no_classify_elevation(features_collection)
+            #features_collection=no_classify_elevation(features_collection)
             # fin_no_clasifica_elevaciones = time.perf_counter()
             # print(f"Tiempo de ejecución_no_clasifica_elevaciones: {fin_no_clasifica_elevaciones - inicio_no_clasifica_elevaciones:.6f} segundos")
-            
+            ##Fin 0-->Codigo que renderiza tilas sin agrupamiento
 
-            # # Usar la versión sin paralelizar de la función para agrupar las tilas por altura
+            
+            ## Usar la versión sin paralelizar de la función para agrupar las tilas por altura
             # inicio_agrupacion = time.perf_counter()
             # features_collection=agrupar_tilas_por_altura(features_collection)
             # fin_agrupacion = time.perf_counter()
             # print(f"Tiempo de ejecución_agrupacion sin paralelizar: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ## Fin Usar la versión sin paralelizar de la función para agrupar las tilas por altura
 
             ##1
             # clasificación de elevaciones sin paralelizar
@@ -1144,6 +913,8 @@ def polygon_coloring_elevation_consulta_7(geometry, dataset):
 
     # Retornar el objeto en formato JSON
     return features_collection, [min_height, max_height], avg_height
+
+    ####End-Sección(3):Funciones principales-alias de->polygon_coloring_elevation_consulta_7
 
 
 

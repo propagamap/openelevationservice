@@ -201,7 +201,15 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         #print("geom",geom)
         print("-------------polygon_coloring_elevation_query_7-->(Without Adjacency)")
         inicio = time.perf_counter()
+        #para producción-pullRequest-->version paralelizando uniones y mejorando-paralelizando subproceso de uniones
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7(geom, 'srtm')
+        #Separación de código en el script querybuilder para analizar -->sirve para escribir paper
+        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_sin_agrupar(geom, 'srtm')
+        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_sin_clasif_elevac_por_rango(geom, 'srtm')
+        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_clasif_elevac_por_rango(geom, 'srtm')
+        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_sin_clasif_elevac_por_rango(geom, 'srtm')
+        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango(geom, 'srtm')
+        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_spm_clasif_elevac_por_rango(geom, 'srtm')#-->spm:subproceso de uniones se mejora
         fin = time.perf_counter()
         print(f"Tiempo de ejecución collection_queried y otros valores: {fin - inicio:.6f} segundos")
         #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_con_explain_analize(geom, 'srtm')
