@@ -193,23 +193,33 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     ###Start-QUERY_7
     @handle_exceptions
-    def AreaRangesElevation(self, request, context):
+    def AreaRangesElevation_(self, request, context):
         # print(" ")
         # print("request",request)
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         print(" ")
         #print("geom",geom)
-        print("-------------polygon_coloring_elevation_query_7-->(Without Adjacency)")
+        print("------------->polygon_coloring_elevation_query_7-->(Without Adjacency)")
         inicio = time.perf_counter()
+
+        #####-->OJO:Se dan varios casos donde se paraleliza debido a diferentes librerias y subprocesos de uniones. OJO
         #para producción-pullRequest-->version paralelizando uniones y mejorando-paralelizando subproceso de uniones
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7(geom, 'srtm')
+        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7(geom, 'srtm')
+
+
         #Separación de código en el script querybuilder para analizar -->sirve para escribir paper
-        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_sin_agrupar(geom, 'srtm')
-        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_sin_clasif_elevac_por_rango(geom, 'srtm')
-        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_clasif_elevac_por_rango(geom, 'srtm')
-        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_sin_clasif_elevac_por_rango(geom, 'srtm')
-        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango(geom, 'srtm')
-        # collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_spm_clasif_elevac_por_rango(geom, 'srtm')#-->spm:subproceso de uniones se mejora
+        #Lista(FP2)
+        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_sin_agrupar(geom, 'srtm')
+        #Lista(FP3)
+        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_sin_clasif_elevac_por_rango_sin_paral(geom, 'srtm')
+        #Lista(FP4)
+        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_clasif_elevac_por_rango(geom, 'srtm')
+        #Lista(FP5)
+        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_sin_clasif_elevac_por_rango(geom, 'srtm')
+        #Lista(FP6)--> (mejor opcion)--> Se subira a producción
+        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango(geom, 'srtm')
+        #Lista(FP7)--> (mejor opcion para grandes extensines de terreno)
+        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_spm_clasif_elevac_por_rango(geom, 'srtm')#-->spm:subproceso de uniones se mejora
         fin = time.perf_counter()
         print(f"Tiempo de ejecución collection_queried y otros valores: {fin - inicio:.6f} segundos")
         #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_con_explain_analize(geom, 'srtm')
@@ -254,7 +264,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     ###Start-Original-modified-cmt code for the AreaRangesElevation function
     @handle_exceptions
-    def AreaRangesElevation_(self, request, context):
+    def AreaRangesElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         # print(" ")
         # print("geom",geom)

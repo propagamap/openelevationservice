@@ -336,7 +336,9 @@ def polygon_coloring_elevation_modified(geometry, dataset):
 
 
 #####--------->Consulta 7: (sin adyacencia)
+
 ####Sección(1):La consulta
+
 ###Start-Código de la consulta-->Se filtran las tilas con alturas iguales a cero. Todas las funciones llaman este query
 CONSULTA_7 = text(
     """
@@ -383,12 +385,14 @@ FROM polygons;
     """
 )
 ###End-Código de la consulta-->Se filtran las tilas con alturas iguales a cero. Todas las funciones llaman este query
+
 ####End-Sección(1)
 
 ####Sección(2):Las funciones
 
 ###(F1)
 ###--->Función que no_clasifica elevaciones por rango_para pruebas
+"""Esta función es llamada por --> polygon_coloring_elevation_consulta_7_sin_agrupar --> Sección(3):Funciones principales"""
 def no_classify_elevation(features_collection):
          
     classified_features = {
@@ -418,7 +422,7 @@ def no_classify_elevation(features_collection):
 
     return classified_features
 ###--->Fin Función que no_clasifica elevaciones por rango_para pruebas
-
+###(End-F1)
 
 ###(F2)
 ###funciones usadas para clasificar elevaciones paralelizando
@@ -763,7 +767,8 @@ def agrupar_tilas_por_altura_paralelo_respaldo(datos, num_procesos=12, chunk_siz
     return datos_agrupados
 ####--->respaldo Fin Función paralelizada para agrupar tilas por altura
 
-####--->Función de agrupacion de datos
+###(F7)
+####--->Función que agrupar_tilas_por_altura sin clasificar ni paralelizar
 def agrupar_tilas_por_altura(datos):
     agrupaciones = {}
     
@@ -800,17 +805,20 @@ def agrupar_tilas_por_altura(datos):
     }
 
     return datos_agrupados
-####--->Fin Función de agrupacion de datos
+####--->Función que agrupar_tilas_por_altura sin clasificar ni paralelizar
+###(End-F7)
 
 ####End-Sección(2):Las funciones
 
 
+
 ####Start-Sección(3):Funciones principales-alias de->polygon_coloring_elevation_consulta_7
 
+#Start-Función principal (1)
 # Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
 def polygon_coloring_elevation_consulta_7(geometry, dataset):
     """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
-    print("-------------Consulta 7: área grande > 900 km2 (sin adyacencia)")
+    print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7 ")
     
     #Poligono de prueba para un area grande-->mas de 900km2
     #polygon = 'POLYGON((-3.41314 40.4762, -3.289893 40.4762, -3.289893 40.91916, -3.41314 40.91916, -3.41314 40.4762))'
@@ -896,11 +904,181 @@ def polygon_coloring_elevation_consulta_7(geometry, dataset):
             print(f"Tiempo de ejecución_agrupacion paralelizando: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
             ##Fin 2
 
+            # print("Min Height:", min_height)
+            # print("Max Height:", max_height)
+            # print("Avg Height:", avg_height)
+        else:
+            print("No se devolvieron resultados.")
+
+    except Exception as e:
+        print(f"Error al ejecutar la consulta: {e}")
+
+    # Retornar el objeto en formato JSON
+    return features_collection, [min_height, max_height], avg_height
+#End-Función principal (1)
+
+#Start-Función principal (2)
+# Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
+def polygon_coloring_elevation_consulta_7_sin_agrupar(geometry, dataset):
+    """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
+    print("------------->Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_sin_agrupar ")
+    
+    #proceso geometry que es el poligono entrante
+    #print("polygon", geometry)
+    polygon = f"{geometry}"
+    #print("polygon", polygon)
+
+
+    # Obtener la sesión de la base de datos
+    session = db.get_session()
+
+    # Ejecutar la consulta con el polígono como parámetro
+    try:
+        inicio = time.perf_counter()
+        result = session.execute(CONSULTA_7, {"polygon": polygon})
+        fin = time.perf_counter()
+        print(f"Tiempo de ejecución query a BBDD: {fin - inicio:.6f} segundos")
+
+        # Obtener un solo resultado (dado que estamos esperando un único GeoJSON y estadísticas)
+        row = result.fetchone()
+
+        if row:
+            # Desempaquetar los resultados: features_collection, min_height, max_height, avg_height
+            features_collection, min_height, max_height, avg_height = row
             
+            ##0-->Codigo que renderiza tilas sin agrupamiento
+            # Función que no clasifica --> Llama a la función (F1) no_classify_elevation-->####Sección(2):Las funciones
+            inicio_no_clasifica_elevaciones = time.perf_counter()
+            features_collection=no_classify_elevation(features_collection)
+            fin_no_clasifica_elevaciones = time.perf_counter()
+            print(f"Tiempo de ejecución_no_clasifica_elevaciones: {fin_no_clasifica_elevaciones - inicio_no_clasifica_elevaciones:.6f} segundos")
+            ##Fin 0-->Codigo que renderiza tilas sin agrupamiento
+
+        else:
+            print("No se devolvieron resultados.")
+
+    except Exception as e:
+        print(f"Error al ejecutar la consulta: {e}")
+
+    # Retornar el objeto en formato JSON
+    return features_collection, [min_height, max_height], avg_height
+    #End-Función principal (2)
+
+    #Start-Función principal (3)
+    # Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
+def polygon_coloring_elevation_consulta_7_agrupando_sin_clasif_elevac_por_rango_sin_paral(geometry, dataset):
+    """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
+    print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_agrupando_sin_clasif_elevac_por_rango_sin_paral ")
+    
+    polygon = f"{geometry}"
+    #print("polygon", polygon)
+
+    # Obtener la sesión de la base de datos
+    session = db.get_session()
+
+    # Ejecutar la consulta con el polígono como parámetro
+    try:
+        inicio = time.perf_counter()
+        result = session.execute(CONSULTA_7, {"polygon": polygon})
+        fin = time.perf_counter()
+        print(f"Tiempo de ejecución query a BBDD: {fin - inicio:.6f} segundos")
+
+        # Obtener un solo resultado (dado que estamos esperando un único GeoJSON y estadísticas)
+        row = result.fetchone()
+
+        if row:
+            # Desempaquetar los resultados: features_collection, min_height, max_height, avg_height
+            features_collection, min_height, max_height, avg_height = row
+           
+            ##1-->Codigo que renderiza tilas agrupando_sin_clasif_elevac_por_rango_sin paralelizar
+            # Función que agrupar_tilas_por_altura sin clasificar ni paralelizar --> Llama a la función (F7) -->####Sección(2):Las funciones
+            # inicio_agrupacion = time.perf_counter()
+            features_collection=agrupar_tilas_por_altura(features_collection)
+            # fin_agrupacion = time.perf_counter()
+            # print(f"Tiempo de ejecución_agrupacion sin paralelizar: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ##Fin 1-->Codigo que renderiza agrupando_sin_clasif_elevac_por_rango_sin_paralelizar
+
+        else:
+            print("No se devolvieron resultados.")
+
+    except Exception as e:
+        print(f"Error al ejecutar la consulta: {e}")
+
+    # Retornar el objeto en formato JSON
+    return features_collection, [min_height, max_height], avg_height
+    #End-Función principal (3)
+
+    #Start-Función principal (4)
+    # Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
+def polygon_coloring_elevation_consulta_7_agrupando_con_clasif_elevac_por_rango(geometry, dataset):
+    """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
+    print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_agrupando_con_clasif_elevac_por_rango ")
+    
+    polygon = f"{geometry}"
+    #print("polygon", polygon)
+    
+    # Obtener la sesión de la base de datos
+    session = db.get_session()
+
+    # Ejecutar la consulta con el polígono como parámetro
+    try:
+        inicio = time.perf_counter()
+        result = session.execute(CONSULTA_7, {"polygon": polygon})
+        fin = time.perf_counter()
+        print(f"Tiempo de ejecución query a BBDD: {fin - inicio:.6f} segundos")
+
+        # Obtener un solo resultado (dado que estamos esperando un único GeoJSON y estadísticas)
+        row = result.fetchone()
+
+        if row:
+            # Desempaquetar los resultados: features_collection, min_height, max_height, avg_height
+            features_collection, min_height, max_height, avg_height = row
 
 
+            # clasificación de elevaciones sin paralelizar
+            inicio_clasifica_elevaciones = time.perf_counter()
+            features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
+            fin_clasifica_elevaciones = time.perf_counter()
+            print(f"Tiempo de ejecución_clasifica_elevaciones----: {fin_clasifica_elevaciones - inicio_clasifica_elevaciones:.6f} segundos")
+            
+                   
+            ## Usar la versión sin paralelizar de la función para agrupar las tilas por altura
+            # inicio_agrupacion = time.perf_counter()
+            features_collection=agrupar_tilas_por_altura(features_collection)
+            # fin_agrupacion = time.perf_counter()
+            # print(f"Tiempo de ejecución_agrupacion sin paralelizar: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ## Fin Usar la versión sin paralelizar de la función para agrupar las tilas por altura
 
+            ##1
+            # clasificación de elevaciones sin paralelizar
+            # inicio_clasifica_elevaciones = time.perf_counter()
+            # features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
+            # fin_clasifica_elevaciones = time.perf_counter()
+            # print(f"Tiempo de ejecución_clasifica_elevaciones----: {fin_clasifica_elevaciones - inicio_clasifica_elevaciones:.6f} segundos")
+            
+            # clasificación de elevaciones paralelizando
+            # inicio_clasifica_elevaciones_paralelizando = time.perf_counter()
+            # #multiprocessing
+            # features_collection=classify_elevation_parallel_multiprocessing(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, num_processes=4, chunk_size=4)
+            # #concurrent
+            # #features_collection=classify_elevation_parallel_consurrent(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, num_processes=8)
+            # fin_clasifica_elevaciones_paralelizando = time.perf_counter()
+            # print(f"Tiempo de ejecución_clasifica_elevaciones_paralelizando----: {fin_clasifica_elevaciones_paralelizando - inicio_clasifica_elevaciones_paralelizando:.6f} segundos")
+            
+            
+            
+            
+            ##Fin 1
 
+            ##2
+            # Usar la versión paralelizada de la función para agrupar las tilas por altura
+            #inicio_agrupacion = time.perf_counter()
+            #features_collection = agrupar_tilas_por_altura_paralelo(features_collection, num_procesos=8, chunk_size=5)
+            #features_collection = agrupar_tilas_por_altura_paralelo_modificada(features_collection, num_procesos=4, chunk_size=5)
+           
+            #fin_agrupacion = time.perf_counter()
+            #print(f"Tiempo de ejecución_agrupacion paralelizando: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ##Fin 2
 
             # print("Min Height:", min_height)
             # print("Max Height:", max_height)
@@ -913,8 +1091,305 @@ def polygon_coloring_elevation_consulta_7(geometry, dataset):
 
     # Retornar el objeto en formato JSON
     return features_collection, [min_height, max_height], avg_height
+    #End-Función principal (4)
+
+    #Star-Función principal (5)
+    # Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
+def polygon_coloring_elevation_consulta_7_agrupando_con_paral_sin_clasif_elevac_por_rango(geometry, dataset):
+    """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
+    print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_agrupando_con_paral_sin_clasif_elevac_por_rango ")
+    
+    #Poligono de prueba para un area grande-->mas de 900km2
+    #polygon = 'POLYGON((-3.41314 40.4762, -3.289893 40.4762, -3.289893 40.91916, -3.41314 40.91916, -3.41314 40.4762))'
+    #print("polygon", polygon)
+
+    #proceso geometry que es el poligono entrante
+    #print("polygon", geometry)
+    polygon = f"{geometry}"
+    #print("polygon", polygon)
+
+
+    # Obtener la sesión de la base de datos
+    session = db.get_session()
+
+    # Ejecutar la consulta con el polígono como parámetro
+    try:
+        inicio = time.perf_counter()
+        result = session.execute(CONSULTA_7, {"polygon": polygon})
+        fin = time.perf_counter()
+        print(f"Tiempo de ejecución query a BBDD: {fin - inicio:.6f} segundos")
+
+        # Obtener un solo resultado (dado que estamos esperando un único GeoJSON y estadísticas)
+        row = result.fetchone()
+
+        if row:
+            # Desempaquetar los resultados: features_collection, min_height, max_height, avg_height
+            features_collection, min_height, max_height, avg_height = row
+            #print("features_collection",features_collection)
+           #print(" ")
+            #features_collection = row
+            #print("features_collection",features_collection)
+
+            # Imprimir o retornar los resultados
+            #print("GeoJSON Features Collection:", features_collection)
+
+            # with open("salida_sin_agrupar_crudos_area_200km2.json", "w") as archivo:
+            #     json.dump(features_collection, archivo, indent=4)  
+
+            ##0-->Codigo que renderiza tilas sin agrupamiento
+            # Función que no claifica --> no_classify_elevation
+            # inicio_no_clasifica_elevaciones = time.perf_counter()
+            #features_collection=no_classify_elevation(features_collection)
+            # fin_no_clasifica_elevaciones = time.perf_counter()
+            # print(f"Tiempo de ejecución_no_clasifica_elevaciones: {fin_no_clasifica_elevaciones - inicio_no_clasifica_elevaciones:.6f} segundos")
+            ##Fin 0-->Codigo que renderiza tilas sin agrupamiento
+
+            
+            ## Usar la versión sin paralelizar de la función para agrupar las tilas por altura
+            # inicio_agrupacion = time.perf_counter()
+            # features_collection=agrupar_tilas_por_altura(features_collection)
+            # fin_agrupacion = time.perf_counter()
+            # print(f"Tiempo de ejecución_agrupacion sin paralelizar: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ## Fin Usar la versión sin paralelizar de la función para agrupar las tilas por altura
+
+            ##1
+            # clasificación de elevaciones sin paralelizar
+            # inicio_clasifica_elevaciones = time.perf_counter()
+            # features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
+            # fin_clasifica_elevaciones = time.perf_counter()
+            # print(f"Tiempo de ejecución_clasifica_elevaciones----: {fin_clasifica_elevaciones - inicio_clasifica_elevaciones:.6f} segundos")
+            
+            # clasificación de elevaciones paralelizando
+            # inicio_clasifica_elevaciones_paralelizando = time.perf_counter()
+            # #multiprocessing
+            # features_collection=classify_elevation_parallel_multiprocessing(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, num_processes=4, chunk_size=4)
+            # #concurrent
+            # #features_collection=classify_elevation_parallel_consurrent(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, num_processes=8)
+            # fin_clasifica_elevaciones_paralelizando = time.perf_counter()
+            # print(f"Tiempo de ejecución_clasifica_elevaciones_paralelizando----: {fin_clasifica_elevaciones_paralelizando - inicio_clasifica_elevaciones_paralelizando:.6f} segundos")
+            
+            
+            
+            
+            ##Fin 1
+
+            ##Dos casos de paralelización por diferentes librerias y por subproceso mejorado
+            # Usar la versión paralelizada de la función para agrupar las tilas por altura
+            inicio_agrupacion = time.perf_counter()
+            features_collection = agrupar_tilas_por_altura_paralelo(features_collection, num_procesos=8, chunk_size=5)
+            #features_collection = agrupar_tilas_por_altura_paralelo_modificada(features_collection, num_procesos=4, chunk_size=5)
+           
+            fin_agrupacion = time.perf_counter()
+            print(f"Tiempo de ejecución_agrupacion paralelizando: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ##Fin 2
+
+            # print("Min Height:", min_height)
+            # print("Max Height:", max_height)
+            # print("Avg Height:", avg_height)
+        else:
+            print("No se devolvieron resultados.")
+
+    except Exception as e:
+        print(f"Error al ejecutar la consulta: {e}")
+
+    # Retornar el objeto en formato JSON
+    return features_collection, [min_height, max_height], avg_height
+    #End-Función principal (5)
+
+    #Start-Función principal (6)
+# Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
+def polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango(geometry, dataset):
+    """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
+    print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango ")
+    
+    polygon = f"{geometry}"
+    #print("polygon", polygon)
+
+    # Obtener la sesión de la base de datos
+    session = db.get_session()
+
+    # Ejecutar la consulta con el polígono como parámetro
+    try:
+        inicio = time.perf_counter()
+        result = session.execute(CONSULTA_7, {"polygon": polygon})
+        fin = time.perf_counter()
+        print(f"Tiempo de ejecución query a BBDD: {fin - inicio:.6f} segundos")
+
+        # Obtener un solo resultado (dado que estamos esperando un único GeoJSON y estadísticas)
+        row = result.fetchone()
+
+        if row:
+            # Desempaquetar los resultados: features_collection, min_height, max_height, avg_height
+            features_collection, min_height, max_height, avg_height = row
+            
+            ##0-->Codigo que renderiza tilas sin agrupamiento
+            # Función que no claifica --> no_classify_elevation
+            # inicio_no_clasifica_elevaciones = time.perf_counter()
+            #features_collection=no_classify_elevation(features_collection)
+            # fin_no_clasifica_elevaciones = time.perf_counter()
+            # print(f"Tiempo de ejecución_no_clasifica_elevaciones: {fin_no_clasifica_elevaciones - inicio_no_clasifica_elevaciones:.6f} segundos")
+            ##Fin 0-->Codigo que renderiza tilas sin agrupamiento
+
+            
+            ## Usar la versión sin paralelizar de la función para agrupar las tilas por altura
+            # inicio_agrupacion = time.perf_counter()
+            # features_collection=agrupar_tilas_por_altura(features_collection)
+            # fin_agrupacion = time.perf_counter()
+            # print(f"Tiempo de ejecución_agrupacion sin paralelizar: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ## Fin Usar la versión sin paralelizar de la función para agrupar las tilas por altura
+
+            ##1
+            # clasificación de elevaciones sin paralelizar
+            inicio_clasifica_elevaciones = time.perf_counter()
+            features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
+            fin_clasifica_elevaciones = time.perf_counter()
+            print(f"Tiempo de ejecución_clasifica_elevaciones----: {fin_clasifica_elevaciones - inicio_clasifica_elevaciones:.6f} segundos")
+            
+            # clasificación de elevaciones paralelizando
+            # inicio_clasifica_elevaciones_paralelizando = time.perf_counter()
+            # #multiprocessing
+            # features_collection=classify_elevation_parallel_multiprocessing(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, num_processes=4, chunk_size=4)
+            # #concurrent
+            # #features_collection=classify_elevation_parallel_consurrent(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, num_processes=8)
+            # fin_clasifica_elevaciones_paralelizando = time.perf_counter()
+            # print(f"Tiempo de ejecución_clasifica_elevaciones_paralelizando----: {fin_clasifica_elevaciones_paralelizando - inicio_clasifica_elevaciones_paralelizando:.6f} segundos")
+            
+            
+            
+            
+            ##Fin 1
+
+            ##2
+            # Usar la versión paralelizada de la función para agrupar las tilas por altura
+            inicio_agrupacion = time.perf_counter()
+            features_collection = agrupar_tilas_por_altura_paralelo(features_collection, num_procesos=8, chunk_size=5)
+            #features_collection = agrupar_tilas_por_altura_paralelo_modificada(features_collection, num_procesos=4, chunk_size=5)
+           
+            fin_agrupacion = time.perf_counter()
+            print(f"Tiempo de ejecución_agrupacion paralelizando: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ##Fin 2
+
+            # print("Min Height:", min_height)
+            # print("Max Height:", max_height)
+            # print("Avg Height:", avg_height)
+        else:
+            print("No se devolvieron resultados.")
+
+    except Exception as e:
+        print(f"Error al ejecutar la consulta: {e}")
+
+    # Retornar el objeto en formato JSON
+    return features_collection, [min_height, max_height], avg_height
+    #End-Función principal (6)
+
+    #Start-Función principal (7)
+    # Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
+def polygon_coloring_elevation_consulta_7_agrupando_con_paral_spm_clasif_elevac_por_rango(geometry, dataset):
+    """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
+    print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_agrupando_con_paral_spm_clasif_elevac_por_rango ")
+    
+    #Poligono de prueba para un area grande-->mas de 900km2
+    #polygon = 'POLYGON((-3.41314 40.4762, -3.289893 40.4762, -3.289893 40.91916, -3.41314 40.91916, -3.41314 40.4762))'
+    #print("polygon", polygon)
+
+    #proceso geometry que es el poligono entrante
+    #print("polygon", geometry)
+    polygon = f"{geometry}"
+    #print("polygon", polygon)
+
+
+    # Obtener la sesión de la base de datos
+    session = db.get_session()
+
+    # Ejecutar la consulta con el polígono como parámetro
+    try:
+        inicio = time.perf_counter()
+        result = session.execute(CONSULTA_7, {"polygon": polygon})
+        fin = time.perf_counter()
+        print(f"Tiempo de ejecución query a BBDD: {fin - inicio:.6f} segundos")
+
+        # Obtener un solo resultado (dado que estamos esperando un único GeoJSON y estadísticas)
+        row = result.fetchone()
+
+        if row:
+            # Desempaquetar los resultados: features_collection, min_height, max_height, avg_height
+            features_collection, min_height, max_height, avg_height = row
+            #print("features_collection",features_collection)
+           #print(" ")
+            #features_collection = row
+            #print("features_collection",features_collection)
+
+            # Imprimir o retornar los resultados
+            #print("GeoJSON Features Collection:", features_collection)
+
+            # with open("salida_sin_agrupar_crudos_area_200km2.json", "w") as archivo:
+            #     json.dump(features_collection, archivo, indent=4)  
+
+            ##0-->Codigo que renderiza tilas sin agrupamiento
+            # Función que no claifica --> no_classify_elevation
+            # inicio_no_clasifica_elevaciones = time.perf_counter()
+            #features_collection=no_classify_elevation(features_collection)
+            # fin_no_clasifica_elevaciones = time.perf_counter()
+            # print(f"Tiempo de ejecución_no_clasifica_elevaciones: {fin_no_clasifica_elevaciones - inicio_no_clasifica_elevaciones:.6f} segundos")
+            ##Fin 0-->Codigo que renderiza tilas sin agrupamiento
+
+            
+            ## Usar la versión sin paralelizar de la función para agrupar las tilas por altura
+            # inicio_agrupacion = time.perf_counter()
+            # features_collection=agrupar_tilas_por_altura(features_collection)
+            # fin_agrupacion = time.perf_counter()
+            # print(f"Tiempo de ejecución_agrupacion sin paralelizar: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ## Fin Usar la versión sin paralelizar de la función para agrupar las tilas por altura
+
+            ##1
+            # clasificación de elevaciones sin paralelizar
+            inicio_clasifica_elevaciones = time.perf_counter()
+            features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
+            fin_clasifica_elevaciones = time.perf_counter()
+            print(f"Tiempo de ejecución_clasifica_elevaciones----: {fin_clasifica_elevaciones - inicio_clasifica_elevaciones:.6f} segundos")
+            
+            # clasificación de elevaciones paralelizando
+            # inicio_clasifica_elevaciones_paralelizando = time.perf_counter()
+            # #multiprocessing
+            # features_collection=classify_elevation_parallel_multiprocessing(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, num_processes=4, chunk_size=4)
+            # #concurrent
+            # #features_collection=classify_elevation_parallel_consurrent(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, num_processes=8)
+            # fin_clasifica_elevaciones_paralelizando = time.perf_counter()
+            # print(f"Tiempo de ejecución_clasifica_elevaciones_paralelizando----: {fin_clasifica_elevaciones_paralelizando - inicio_clasifica_elevaciones_paralelizando:.6f} segundos")
+            
+            
+            
+            
+            ##Fin 1
+
+            ##2
+            # Usar la versión paralelizada de la función para agrupar las tilas por altura
+            inicio_agrupacion = time.perf_counter()
+            #features_collection = agrupar_tilas_por_altura_paralelo(features_collection, num_procesos=8, chunk_size=5)
+            features_collection = agrupar_tilas_por_altura_paralelo_modificada(features_collection, num_procesos=4, chunk_size=5)
+           
+            fin_agrupacion = time.perf_counter()
+            print(f"Tiempo de ejecución_agrupacion paralelizando: {fin_agrupacion - inicio_agrupacion:.6f} segundos")
+            ##Fin 2
+
+            # print("Min Height:", min_height)
+            # print("Max Height:", max_height)
+            # print("Avg Height:", avg_height)
+        else:
+            print("No se devolvieron resultados.")
+
+    except Exception as e:
+        print(f"Error al ejecutar la consulta: {e}")
+
+    # Retornar el objeto en formato JSON
+    return features_collection, [min_height, max_height], avg_height
+    #End-Función principal (7)
+
+    #Start-Función principal (8)
+    #End-Función principal (8)
 
     ####End-Sección(3):Funciones principales-alias de->polygon_coloring_elevation_consulta_7
+
 
 
 
