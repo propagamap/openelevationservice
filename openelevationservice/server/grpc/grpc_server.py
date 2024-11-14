@@ -17,38 +17,6 @@ import json
 #AAOR-Fin Import
 
 
-### Function to calculate the size of the generated file
-def calculate_size(obj):
-    # Measure the size in bytes of the JSON string
-    size_in_bytes = sys.getsizeof(obj)
-
-    # Convert to kilobytes (KB)
-    size_in_kb = size_in_bytes / 1024
-
-    # Convert to megabytes (MB)
-    size_in_mb = size_in_bytes / (1024 * 1024)
-
-    print(f"File size to transfer from OES to the Frontend in KB: {size_in_kb:.2f} KB")
-    print(f"File size to transfer from OES to the Frontend in MB: {size_in_mb:.2f} MB")       
-### End Function to calculate the size of the generated file
-
-
-###Función para calcular el tamaño del archivo generado
-def calcular_peso(objeto):
-    # Medir el tamaño en bytes de la cadena JSON
-    tamano_en_bytes = sys.getsizeof(objeto)
-
-    # Convertir a kilobytes (KB)
-    tamano_en_kb = tamano_en_bytes / 1024
-
-    # Convertir a megabytes (MB)
-    tamano_en_megas = tamano_en_bytes / (1024 * 1024)
-
-    print(f"Tamaño del archivo a transferir desde OES al Frontend en KB: {tamano_en_kb:.2f} KB")
-    print(f"Tamaño del archivo a transferir desde OES al Frontend en MB: {tamano_en_megas:.2f} MB")       
-###Fin Función para calcular el tamaño del archivo generado
-
-
 def handle_exceptions(func):
     def wrapper(self, request, context):
         try:
@@ -156,9 +124,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             ]) for bondary in coordinates            
         ])
 
-    ####################### New Parallelization Analysis 03Oct2024 ##################
 
-    #####---->    (1)   ######
     
     ###Start-Original code for the AreaRangesElevation function
     @handle_exceptions
@@ -189,46 +155,19 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         )
     ###End-Original code for the AreaRangesElevation function
 
-    #####---->    (2)   ######
 
-    ###Start-QUERY_7
+    ###Start-Query 7: paralalelizando uniones y clasificando elevaciones por rango 
     @handle_exceptions
-    def AreaRangesElevation_(self, request, context):
-        # print(" ")
-        # print("request",request)
+    def AreaRangesElevation(self, request, context):
+        
         geom = convert.polygon_to_geometry(self._format_area_request(request))
-        print(" ")
-        #print("geom",geom)
-        print("------------->polygon_coloring_elevation_query_7-->(Without Adjacency)")
-        inicio = time.perf_counter()
 
-        #####-->OJO:Se dan varios casos donde se paraleliza debido a diferentes librerias y subprocesos de uniones. OJO
-        #para producción-pullRequest-->version paralelizando uniones y mejorando-paralelizando subproceso de uniones
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7(geom, 'srtm')
+        print("------------->polygon_coloring_elevation_query_7-->(Mejoras del código)")
+        
 
-
-        #Separación de código en el script querybuilder para analizar -->sirve para escribir paper
-        #Lista(FP2)
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_sin_agrupar(geom, 'srtm')
-        #Lista(FP3)
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_sin_clasif_elevac_por_rango_sin_paral(geom, 'srtm')
-        #Lista(FP4)
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_clasif_elevac_por_rango(geom, 'srtm')
-        #Lista(FP5)
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_sin_clasif_elevac_por_rango(geom, 'srtm')
         #Lista(FP6)--> (mejor opcion)--> Se subira a producción
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango(geom, 'srtm')
-        #Lista(FP7)--> (mejor opcion para grandes extensines de terreno)
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_spm_clasif_elevac_por_rango(geom, 'srtm')#-->spm:subproceso de uniones se mejora
-        fin = time.perf_counter()
-        print(f"Tiempo de ejecución collection_queried y otros valores: {fin - inicio:.6f} segundos")
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_con_explain_analize(geom, 'srtm')
-        #print("collection_queried",collection_queried)
-        # print("range_queried[0]",range_queried[0])
-        # print("range_queried[1]",range_queried[1])
-        # print("avg_queried",avg_queried)
-             
-        inicio_result = time.perf_counter()
+        
         result = []
         for feature in collection_queried['features']:
             geometry = feature['geometry']  # Ya es un dict, no necesita json.loads
@@ -245,70 +184,15 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                         baseElevation=heightBase,
                         area=self._create_proto_geo_polygon(polygon),
                     ))
-        fin_result = time.perf_counter()
-        print(f"Tiempo de ejecución_result: {fin_result - inicio_result:.6f} segundos")
-
-        ###Star-Measure file size to transfer
-        calculate_size(result)
-        ###End-Measure file size to transfer
-
-
+        
         return defs.AreaRangesResponse(
             unions=result,
             minElevation=int(range_queried[0]),
             maxElevation=int(range_queried[1]),
             avgElevation=avg_queried,
 )
-    ###End-QUERY_7
-    #####END New Parallelization Analysis 03Oct2024
-
-    ###Start-Original-modified-cmt code for the AreaRangesElevation function
-    @handle_exceptions
-    def AreaRangesElevation(self, request, context):
-        geom = convert.polygon_to_geometry(self._format_area_request(request))
-        # print(" ")
-        # print("geom",geom)
-        print("polygon_coloring_elevation_originallL")
-        #print("collection_queried",collection_queried)
-        inicio = time.perf_counter()
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
-        fin = time.perf_counter()
-        print(f"Tiempo de ejecución collection_queried y otros valores: {fin - inicio:.6f} segundos")
-        #print("collection_queried",collection_queried)
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_modified_cmt(geom, 'srtm')
-        #collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_cmt(geom, 'srtm')
-
-        inicio_result = time.perf_counter()         
-        result = []
-        for feature in collection_queried['features']:
-            heightBase = int(feature['properties']['heightBase'])
-            if feature['geometry']['type'] == 'Polygon':
-                result.append(defs.UnitedArea(
-                    baseElevation=heightBase,
-                    area=self._create_proto_geo_polygon(feature['geometry']['coordinates']),
-                ))
-            else:
-                for polygon in feature['geometry']['coordinates']:
-                    result.append(defs.UnitedArea(
-                        baseElevation=heightBase,
-                        area=self._create_proto_geo_polygon(polygon),
-                    ))
-        fin_result = time.perf_counter()
-        print(f"Tiempo de ejecución_result: {fin_result - inicio_result:.6f} segundos")
-
-        ###Star-Measure file size to transfer
-        calculate_size(result)
-        ###End-Measure file size to transfer
-
-        
-        return defs.AreaRangesResponse(
-            unions=result,
-            minElevation=range_queried[0],
-            maxElevation=range_queried[1],
-            avgElevation=avg_queried,
-        )
-    ###End-Original-modified-cmt code for the AreaRangesElevation function
-
+    ###End-Query 7: paralalelizando uniones y clasificando elevaciones por rango 
+    
 
 def grpc_serve(port_url):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
