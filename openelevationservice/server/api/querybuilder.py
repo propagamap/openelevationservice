@@ -271,63 +271,120 @@ def classify_elevation(features_collection, min_height, max_height, num_ranges=2
 ###--->Fin Función que clasifica elevaciones por rango
 
 ####--->Función que realiza la unión usada en agrupar_tilas_por_altura_paralelo
-# Función para procesar la unión de polígonos
-def procesar_union(entrada):
-    altura, poligonos = entrada
-    union_poligonos = unary_union(poligonos)
+####procesar_union
+# def procesar_union(entrada):
+#     altura, poligonos = entrada
+#     union_poligonos = unary_union(poligonos)
 
     
-    if isinstance(union_poligonos, Polygon):
-        union_poligonos = [union_poligonos]
-    elif isinstance(union_poligonos, MultiPolygon):
-        union_poligonos = union_poligonos.geoms
+#     if isinstance(union_poligonos, Polygon):
+#         union_poligonos = [union_poligonos]
+#     elif isinstance(union_poligonos, MultiPolygon):
+#         union_poligonos = union_poligonos.geoms
 
     
-    nuevas_features = []
-    for poligono in union_poligonos:
-        nuevas_features.append({
+#     nuevas_features = []
+#     for poligono in union_poligonos:
+#         nuevas_features.append({
+#             "type": "Feature",
+#             "geometry": mapping(poligono),
+#             "properties": {"heightBase": altura}
+#         })
+
+#     return nuevas_features
+####Fin procesar_union
+
+####process_union
+def process_union(input_data):
+    height, polygons = input_data
+    union_polygons = unary_union(polygons)
+
+    if isinstance(union_polygons, Polygon):
+        union_polygons = [union_polygons]
+    elif isinstance(union_polygons, MultiPolygon):
+        union_polygons = union_polygons.geoms
+
+    new_features = []
+    for polygon in union_polygons:
+        new_features.append({
             "type": "Feature",
-            "geometry": mapping(poligono),
-            "properties": {"heightBase": altura}
+            "geometry": mapping(polygon),
+            "properties": {"heightBase": height}
         })
 
-    return nuevas_features
+    return new_features
+
+####fin process_union
+
+
 ####--->Fin Función que agrupa datos paralelizando
 
 ###(F5)
-####--->Función paralelizada para agrupar tilas por altura
-def agrupar_tilas_por_altura_paralelo(datos, num_procesos=12, chunk_size=5):
+####--->Función agrupar_tilas_por_altura_paralelo
+# def agrupar_tilas_por_altura_paralelo(datos, num_procesos=12, chunk_size=5):
     
-    agrupaciones = {}
+#     agrupaciones = {}
         
-    for feature in datos["features"]:
-        altura = feature["properties"]["heightBase"]
-        geometry = json.loads(feature["geometry"])  # Convertir de string a dict
-        poligono = shape(geometry)
+#     for feature in datos["features"]:
+#         altura = feature["properties"]["heightBase"]
+#         geometry = json.loads(feature["geometry"])  # Convertir de string a dict
+#         poligono = shape(geometry)
 
-        if altura not in agrupaciones:
-            agrupaciones[altura] = []
+#         if altura not in agrupaciones:
+#             agrupaciones[altura] = []
         
-        agrupaciones[altura].append(poligono)
+#         agrupaciones[altura].append(poligono)
     
 
-    entradas = [(altura, poligonos) for altura, poligonos in agrupaciones.items()]
+#     entradas = [(altura, poligonos) for altura, poligonos in agrupaciones.items()]
     
    
-    with Pool(num_procesos) as p:
+#     with Pool(num_procesos) as p:
         
-        resultados = p.imap_unordered(procesar_union, entradas, chunksize=chunk_size)
+#         resultados = p.imap_unordered(process_union, entradas, chunksize=chunk_size)
         
         
-        nuevas_features = [item for sublist in resultados for item in sublist]
+#         nuevas_features = [item for sublist in resultados for item in sublist]
 
    
-    datos_agrupados = {
+#     datos_agrupados = {
+#         "type": "FeatureCollection",
+#         "features": nuevas_features
+#     }
+
+#     return datos_agrupados
+####--->Fin Función agrupar_tilas_por_altura_paralelo
+
+def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
+    """Groups tiles by height and processes them in parallel."""
+    
+    groupings = {}
+    
+    for feature in data["features"]:
+        height = feature["properties"]["heightBase"]
+        geometry = json.loads(feature["geometry"])  # Convert from string to dict
+        polygon = shape(geometry)
+
+        if height not in groupings:
+            groupings[height] = []
+        
+        groupings[height].append(polygon)
+    
+    entries = [(height, polygons) for height, polygons in groupings.items()]
+    
+    # Parallel processing
+    with Pool(num_processes) as p:
+        results = p.imap_unordered(process_union, entries, chunksize=chunk_size)
+        
+        new_features = [item for sublist in results for item in sublist]
+
+    grouped_data = {
         "type": "FeatureCollection",
-        "features": nuevas_features
+        "features": new_features
     }
 
-    return datos_agrupados
+    return grouped_data
+
 
 ####--->Fin Función que realiza la unión paralelizando da para agrupar tilas por altura --> llama a función procesar_union
 
@@ -337,7 +394,7 @@ def agrupar_tilas_por_altura_paralelo(datos, num_procesos=12, chunk_size=5):
 
 #Start-Función principal (6)
 # Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
-def polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango(geometry, dataset):
+def polygon_coloring_elevation_query_7_grouping_with_parallel_classification_elevation_by_range(geometry, dataset):
     """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
     print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango ")
     
@@ -366,7 +423,7 @@ def polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_
             
             ##2
             # Usar la versión paralelizada de la función para agrupar las tilas por altura
-            features_collection = agrupar_tilas_por_altura_paralelo(features_collection, num_procesos=4, chunk_size=2)
+            features_collection = group_tiles_by_height_parallel(features_collection, num_processes=4, chunk_size=5)
 
         else:
             print("No se devolvieron resultados.")

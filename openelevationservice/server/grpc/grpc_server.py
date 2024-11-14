@@ -166,7 +166,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         
 
         #Lista(FP6)--> (mejor opcion)--> Se subira a producción
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango(geom, 'srtm')
+        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_query_7_grouping_with_parallel_classification_elevation_by_range(geom, 'srtm')
         
         result = []
         for feature in collection_queried['features']:
