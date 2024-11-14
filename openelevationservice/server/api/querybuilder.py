@@ -178,11 +178,9 @@ def polygon_coloring_elevation(geometry, dataset):
 query_7 = text(
     """
     WITH query_geom AS (
-    -- Polígono de entrada que define la zona de interés
     SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
 ),
 polygons AS (
-    -- Extrae las celdas raster (polígonos) y el valor de elevación dentro del área de interés, luego filtra las alturas diferentes de cero
     SELECT *
     FROM (
         SELECT 
@@ -198,10 +196,8 @@ polygons AS (
         JOIN oes_cgiar 
         ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
     ) AS subquery
-    WHERE height != 0  -- Filtra las alturas iguales a cero
+    WHERE height != 0  
 )
-
--- Genera el resultado en formato GeoJSON sin agrupar
 SELECT jsonb_build_object(
     'type', 'FeatureCollection',
     'features', jsonb_agg(jsonb_build_object(
@@ -224,7 +220,7 @@ FROM polygons;
 
 
 ####Section(2):Functions
-###--->Función que clasifica elevaciones por rango
+###--->Function that classifies elevations by range
 def classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
     
     range_div = (max_height - min_height + 1) / num_ranges
@@ -250,7 +246,7 @@ def classify_elevation(features_collection, min_height, max_height, num_ranges=2
         
        
         if color_range == -1:
-            height_base = no_data_value  # Valor especial para fuera de rango
+            height_base = no_data_value 
         else:
             height_base = math.ceil(color_range * range_div + min_height)
 
@@ -268,33 +264,9 @@ def classify_elevation(features_collection, min_height, max_height, num_ranges=2
         classified_features["features"].append(classified_feature)
 
     return classified_features
-###--->Fin Función que clasifica elevaciones por rango
+###--->End-Function that classifies elevations by range
 
-####--->Función que realiza la unión usada en agrupar_tilas_por_altura_paralelo
-####procesar_union
-# def procesar_union(entrada):
-#     altura, poligonos = entrada
-#     union_poligonos = unary_union(poligonos)
-
-    
-#     if isinstance(union_poligonos, Polygon):
-#         union_poligonos = [union_poligonos]
-#     elif isinstance(union_poligonos, MultiPolygon):
-#         union_poligonos = union_poligonos.geoms
-
-    
-#     nuevas_features = []
-#     for poligono in union_poligonos:
-#         nuevas_features.append({
-#             "type": "Feature",
-#             "geometry": mapping(poligono),
-#             "properties": {"heightBase": altura}
-#         })
-
-#     return nuevas_features
-####Fin procesar_union
-
-####process_union
+####--->Function that performs the union used in group_tiles_by_height_parallel
 def process_union(input_data):
     height, polygons = input_data
     union_polygons = unary_union(polygons)
@@ -313,48 +285,9 @@ def process_union(input_data):
         })
 
     return new_features
+####--->Function that performs the union used in group_tiles_by_height_parallel
 
-####fin process_union
-
-
-####--->Fin Función que agrupa datos paralelizando
-
-###(F5)
-####--->Función agrupar_tilas_por_altura_paralelo
-# def agrupar_tilas_por_altura_paralelo(datos, num_procesos=12, chunk_size=5):
-    
-#     agrupaciones = {}
-        
-#     for feature in datos["features"]:
-#         altura = feature["properties"]["heightBase"]
-#         geometry = json.loads(feature["geometry"])  # Convertir de string a dict
-#         poligono = shape(geometry)
-
-#         if altura not in agrupaciones:
-#             agrupaciones[altura] = []
-        
-#         agrupaciones[altura].append(poligono)
-    
-
-#     entradas = [(altura, poligonos) for altura, poligonos in agrupaciones.items()]
-    
-   
-#     with Pool(num_procesos) as p:
-        
-#         resultados = p.imap_unordered(process_union, entradas, chunksize=chunk_size)
-        
-        
-#         nuevas_features = [item for sublist in resultados for item in sublist]
-
-   
-#     datos_agrupados = {
-#         "type": "FeatureCollection",
-#         "features": nuevas_features
-#     }
-
-#     return datos_agrupados
-####--->Fin Función agrupar_tilas_por_altura_paralelo
-
+####--->Function group_tiles_by_height_parallel --> call the process_union function
 def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
     """Groups tiles by height and processes them in parallel."""
     
@@ -386,54 +319,46 @@ def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
     return grouped_data
 
 
-####--->Fin Función que realiza la unión paralelizando da para agrupar tilas por altura --> llama a función procesar_union
+####--->End-Function group_tiles_by_height_parallel --> call the process_union function
 
 ####End-Section(2):Functions
 
 ####Start-section:Main function-->polygon_coloring_elevation_query_7
 
-#Start-Función principal (6)
-# Función para procesar los datos de elevación para un polígono y retornar un objeto JSON
+#Start-Main function
+
 def polygon_coloring_elevation_query_7_grouping_with_parallel_classification_elevation_by_range(geometry, dataset):
-    """Procesa los datos de elevación para una geometría de polígono y devuelve un JSON."""
+    """Processes elevation data in parallel for a polygon geometry and returns a JSON"""
     print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango ")
     
     polygon = f"{geometry}"
-    #print("polygon", polygon)
 
-    # Obtener la sesión de la base de datos
     session = db.get_session()
-
     
     try:
         
-        # Ejecutar la consulta 7 con el polígono como parámetro
         result = session.execute(query_7, {"polygon": polygon})
         
-        # Obtener un solo resultado (dado que estamos esperando un único GeoJSON y estadísticas)
         row = result.fetchone()
 
         if row:
-            # Desempaquetar los resultados: features_collection, min_height, max_height, avg_height
+
             features_collection, min_height, max_height, avg_height = row
             
             ##1
-            # clasificación de elevaciones sin paralelizar
             features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
             
             ##2
-            # Usar la versión paralelizada de la función para agrupar las tilas por altura
             features_collection = group_tiles_by_height_parallel(features_collection, num_processes=4, chunk_size=5)
 
         else:
-            print("No se devolvieron resultados.")
+            print("No results were returned")
 
     except Exception as e:
-        print(f"Error al ejecutar la consulta: {e}")
+        print(f"Error executing the query: {e}")
 
-    # Retornar el objeto en formato JSON
     return features_collection, [min_height, max_height], avg_height
-    #End-Función principal (6)
+    #End-Main function
 
 ####End-Section(3):Main function-->polygon_coloring_elevation_query_7
 
