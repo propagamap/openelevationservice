@@ -317,9 +317,9 @@ def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
     }
 
     return grouped_data
-
-
 ####--->End-Function group_tiles_by_height_parallel --> call the process_union function
+
+
 
 ####End-Section(2):Functions
 
@@ -329,8 +329,7 @@ def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
 
 def polygon_coloring_elevation_query_7_grouping_with_parallel_classification_elevation_by_range(geometry, dataset):
     """Processes elevation data in parallel for a polygon geometry and returns a JSON"""
-    print("-------------Consulta 7 (sin adyacencia): polygon_coloring_elevation_consulta_7_agrupando_con_paral_clasif_elevac_por_rango ")
-    
+   
     polygon = f"{geometry}"
 
     session = db.get_session()

@@ -156,16 +156,13 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     ###End-Original code for the AreaRangesElevation function
 
 
-    ###Start-Query 7: paralalelizando uniones y clasificando elevaciones por rango 
+    ###Start-Query 7: Parallelizing unions and classifying elevations by range
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
         
-        geom = convert.polygon_to_geometry(self._format_area_request(request))
+        geom = convert.polygon_to_geometry(self._format_area_request(request))     
 
-        print("------------->polygon_coloring_elevation_query_7-->(Mejoras del código)")
-        
-
-        #Lista(FP6)--> (mejor opcion)--> Se subira a producción
+        #Lista(FP6)-->The best option is to deploy it to production.
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_query_7_grouping_with_parallel_classification_elevation_by_range(geom, 'srtm')
         
         result = []
@@ -191,7 +188,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             maxElevation=int(range_queried[1]),
             avgElevation=avg_queried,
 )
-    ###End-Query 7: paralalelizando uniones y clasificando elevaciones por rango 
+    ###End-Query 7: Parallelizing unions and classifying elevations by range
     
 
 def grpc_serve(port_url):
