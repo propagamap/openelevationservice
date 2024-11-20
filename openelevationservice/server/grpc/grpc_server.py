@@ -77,28 +77,29 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             [min_lon, min_lat]
         ]
 
-    ##Original code for the AreaPointsElevation function
-    # @handle_exceptions
-    # def AreaPointsElevation(self, request, context):
-    #     geom = convert.polygon_to_geometry(self._format_area_request(request))
-    #     geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
-    #     geom_shaped = wkt.loads(geom_queried)
-        
-    #     result = []
-    #     for point in list(geom_shaped.coords):
-    #         result.append(defs.LatLonElevation(
-    #             lon=point[0],
-    #             lat=point[1],
-    #             elevation=int(point[2])
-    #         ))
-    
-    #     return defs.AreaPointsResponse(points=result)
-    ##Fin-Original code for the AreaPointsElevation function
-
-    ##Start-Modified AAOR code for AreaPointsElevation function
+    ##Start-Original code for the AreaPointsElevation function
     @handle_exceptions
     def AreaPointsElevation_(self, request, context):
-        print("AreaPointsElevation--")
+        #print("AreaPointsElevation--original")
+        geom = convert.polygon_to_geometry(self._format_area_request(request))
+        geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
+        geom_shaped = wkt.loads(geom_queried)
+        
+        result = []
+        for point in list(geom_shaped.coords):
+            result.append(defs.LatLonElevation(
+                lon=point[0],
+                lat=point[1],
+                elevation=int(point[2])
+            ))
+    
+        return defs.AreaPointsResponse(points=result)
+    ##Fin-Original code for the AreaPointsElevation function
+
+    ##Start-Improvement code for AreaPointsElevation function
+    @handle_exceptions
+    def AreaPointsElevation(self, request, context):
+        #print("AreaPointsElevation--improvement")
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         geom_queried = querybuilder.polygon_elevation_sql_simplificada_2_smt(geom, 'polygon', 'srtm')
         
@@ -111,7 +112,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             ))
         
         return defs.AreaPointsResponse(points=result)
-    ##End-Modified AAOR code for AreaPointsElevation function
+    ##End-Improvement code for AreaPointsElevation function
     
     
     def _create_proto_geo_polygon(self, coordinates):
@@ -129,6 +130,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     ###Start-Original code for the AreaRangesElevation function
     @handle_exceptions
     def AreaRangesElevation_(self, request, context):
+        #print("AreaRangesElevation--original")
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
         
@@ -156,10 +158,10 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     ###End-Original code for the AreaRangesElevation function
 
 
-    ###Start-Query 7: Parallelizing unions and classifying elevations by range
+    ###Start-Query 7: Improvement-Parallelizing unions and classifying elevations by range
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
-        
+        #print("AreaRangesElevation--improvement")
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
 
         #Lista(FP6)-->The best option is to deploy it to production.
@@ -188,7 +190,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             maxElevation=int(range_queried[1]),
             avgElevation=avg_queried,
 )
-    ###End-Query 7: Parallelizing unions and classifying elevations by range
+    ###End-Query 7: Improvement-Parallelizing unions and classifying elevations by range
     
 
 def grpc_serve(port_url):

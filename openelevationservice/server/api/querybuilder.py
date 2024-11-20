@@ -77,8 +77,6 @@ def polygon_coloring_elevation(geometry, dataset):
     :rtype: string
     """
     Model = _getModel(dataset)
-
-    print("AreaRangesElevation-original")
     
     num_ranges = 23
     
@@ -436,7 +434,7 @@ def polygon_elevation(geometry, format_out, dataset):
 ##Fin-Original code for the polygon_elevation function
 
 
-##Start-Modified AAOR code for polygon_elevation function
+##Start-Improvement code for polygon_elevation function
 def polygon_elevation_sql_simplificada_2_smt(geometry, format_out, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
@@ -499,11 +497,10 @@ def polygon_elevation_sql_simplificada_2_smt(geometry, format_out, dataset):
     if result_points == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
-    print("polygon_elevation_sql_simplificada_2_smt--", result_points)
         
     return result_points
 
-##End-Modified AAOR code for polygon_elevation function
+##End-Improvement code for polygon_elevation function
 
 
 
