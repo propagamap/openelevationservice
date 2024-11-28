@@ -9,13 +9,6 @@ from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
 
-#AAOR-Import
-import time
-import sys
-#from openelevationservice.server.api import direct_queries_hanli
-import json
-#AAOR-Fin Import
-
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
@@ -80,7 +73,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     ##Start-Original code for the AreaPointsElevation function
     @handle_exceptions
     def AreaPointsElevation_(self, request, context):
-        #print("AreaPointsElevation--original")
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
         geom_shaped = wkt.loads(geom_queried)
@@ -99,7 +91,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     ##Start-Improvement code for AreaPointsElevation function
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
-        #print("AreaPointsElevation--improvement")
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         geom_queried = querybuilder.polygon_elevation_sql_simplificada_2_smt(geom, 'polygon', 'srtm')
         
@@ -130,7 +121,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     ###Start-Original code for the AreaRangesElevation function
     @handle_exceptions
     def AreaRangesElevation_(self, request, context):
-        #print("AreaRangesElevation--original")
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
         
@@ -158,18 +148,16 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     ###End-Original code for the AreaRangesElevation function
 
 
-    ###Start-Query 7: Improvement-Parallelizing unions and classifying elevations by range
+    ###Start-Improvement-Parallelizing unions and classifying elevations by range
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
-        #print("AreaRangesElevation--improvement")
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
 
-        #Lista(FP6)-->The best option is to deploy it to production.
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_query_7_grouping_with_parallel_classification_elevation_by_range(geom, 'srtm')
+        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_parallel(geom)
         
         result = []
         for feature in collection_queried['features']:
-            geometry = feature['geometry']  # Ya es un dict, no necesita json.loads
+            geometry = feature['geometry']  
             heightBase = int(feature['properties']['heightBase'])
             
             if geometry['type'] == 'Polygon':
@@ -190,7 +178,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             maxElevation=int(range_queried[1]),
             avgElevation=avg_queried,
 )
-    ###End-Query 7: Improvement-Parallelizing unions and classifying elevations by range
+    ###End-Improvement-Parallelizing unions and classifying elevations by range
     
 
 def grpc_serve(port_url):
