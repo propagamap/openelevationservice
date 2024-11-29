@@ -94,7 +94,7 @@ def classify_elevation(features_collection, min_height, max_height, num_ranges=2
         classified_features["features"].append(classified_feature)
 
     return classified_features
-###--->End-Function that classifies elevations by range
+
 
 ####--->Function that performs the union used in group_tiles_by_height_parallel
 def process_union(input_data):
@@ -115,7 +115,7 @@ def process_union(input_data):
         })
 
     return new_features
-####--->Function that performs the union used in group_tiles_by_height_parallel
+
 
 ####--->Function group_tiles_by_height_parallel --> call the process_union function
 def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
@@ -147,6 +147,6 @@ def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
     }
 
     return grouped_data
-####--->End-Function group_tiles_by_height_parallel --> call the process_union function
+
 
 ####End-Functions used in parallelization

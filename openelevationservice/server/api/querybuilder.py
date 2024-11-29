@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import array
 
 # Importing all the code that parallelizes elevation requests
 from openelevationservice.server.api.elevation_query_parallel import query, classify_elevation, group_tiles_by_height_parallel
-# Importing all the code that parallelizes elevation requests
+
 
 log = get_logger(__name__)
 
@@ -164,37 +164,99 @@ def polygon_coloring_elevation(geometry, dataset):
 
 
 ##Start-function polygon_coloring_elevation_parallel
-def polygon_coloring_elevation_parallel(geometry):
-    """Processes elevation data in parallel for a polygon geometry and returns a JSON"""
+# def polygon_coloring_elevation_parallel(geometry):
+#     """Processes elevation data in parallel for a polygon geometry and returns a JSON"""
    
-    polygon = f"{geometry}"
+#     polygon = f"{geometry}"
 
-    session = db.get_session()
+#     session = db.get_session()
     
+#     try:
+        
+#         result = session.execute(query , {"polygon": polygon})
+        
+#         row = result.fetchone()
+
+#         if row:
+
+#             features_collection, min_height, max_height, avg_height = row
+            
+#             ##1
+#             features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
+            
+#             ##2
+#             features_collection = group_tiles_by_height_parallel(features_collection, num_processes=4, chunk_size=5)
+
+#         else:
+#             print("No results were returned")
+
+#     except Exception as e:
+#         print(f"Error executing the query: {e}")
+
+#     return features_collection, [min_height, max_height], avg_height
+##End-function polygon_coloring_elevation_parallel
+
+##start-function polygon_coloring_elevation_parallel-refactoring
+def polygon_coloring_elevation_parallel(geometry):
+    """
+    Processes elevation data in parallel for a polygon geometry and returns a JSON.
+
+    :param geometry: Input 2D polygon geometry to process.
+    :type geometry: Shapely geometry
+
+    :raises InvalidUsage: If the geometry processing or query fails.
+
+    :returns: A tuple containing:
+              - Feature collection (JSON) enriched with elevation data.
+              - List with minimum and maximum elevation.
+              - Average elevation in the polygon.
+    :rtype: tuple(dict, list[float], float)
+    """
+    # Ensure input is a valid polygon
+    if geometry.geom_type != 'Polygon':
+        raise InvalidUsage(400, 4002, f"Needs to be a Polygon, not a {geometry.geom_type}!")
+
+    polygon = str(geometry)  # Serialize geometry for query
+    session = db.get_session()
+
     try:
-        
-        result = session.execute(query , {"polygon": polygon})
-        
+        # Execute query with serialized polygon
+        result = session.execute(query, {"polygon": polygon})
         row = result.fetchone()
 
-        if row:
+        if not row:
+            raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
 
-            features_collection, min_height, max_height, avg_height = row
-            
-            ##1
-            features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
-            
-            ##2
-            features_collection = group_tiles_by_height_parallel(features_collection, num_processes=4, chunk_size=5)
+        features_collection, min_height, max_height, avg_height = row
 
-        else:
-            print("No results were returned")
+        # Classify elevation data
+        features_collection = classify_elevation(
+            features_collection,
+            min_height,
+            max_height,
+            num_ranges=23,
+            no_data_value=-9999
+        )
 
+        # Process tiles in parallel
+        features_collection = group_tiles_by_height_parallel(
+            features_collection,
+            num_processes=4,
+            chunk_size=5
+        )
+
+    except InvalidUsage as exc:
+        # Re-raise application-specific exceptions
+        raise exc
     except Exception as e:
-        print(f"Error executing the query: {e}")
+        # Handle general exceptions gracefully
+        raise InvalidUsage(500, 4003, f"An error occurred while processing the geometry: {str(e)}")
 
+    # Return results
     return features_collection, [min_height, max_height], avg_height
-##End-function polygon_coloring_elevation_parallel
+
+
+##end-function polygon_coloring_elevation_parallel-refactorin
 
 
 ##Original code for the polygon_elevation function
