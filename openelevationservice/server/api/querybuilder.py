@@ -163,40 +163,7 @@ def polygon_coloring_elevation(geometry, dataset):
 ##End-Original code for the polygon_coloring_elevation function
 
 
-##Start-function polygon_coloring_elevation_parallel
-# def polygon_coloring_elevation_parallel(geometry):
-#     """Processes elevation data in parallel for a polygon geometry and returns a JSON"""
-   
-#     polygon = f"{geometry}"
-
-#     session = db.get_session()
-    
-#     try:
-        
-#         result = session.execute(query , {"polygon": polygon})
-        
-#         row = result.fetchone()
-
-#         if row:
-
-#             features_collection, min_height, max_height, avg_height = row
-            
-#             ##1
-#             features_collection=classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)
-            
-#             ##2
-#             features_collection = group_tiles_by_height_parallel(features_collection, num_processes=4, chunk_size=5)
-
-#         else:
-#             print("No results were returned")
-
-#     except Exception as e:
-#         print(f"Error executing the query: {e}")
-
-#     return features_collection, [min_height, max_height], avg_height
-##End-function polygon_coloring_elevation_parallel
-
-##start-function polygon_coloring_elevation_parallel-refactoring
+##start-function polygon_coloring_elevation_parallel
 def polygon_coloring_elevation_parallel(geometry):
     """
     Processes elevation data in parallel for a polygon geometry and returns a JSON.
@@ -256,7 +223,7 @@ def polygon_coloring_elevation_parallel(geometry):
     return features_collection, [min_height, max_height], avg_height
 
 
-##end-function polygon_coloring_elevation_parallel-refactorin
+##end-function polygon_coloring_elevation_parallel
 
 
 ##Original code for the polygon_elevation function
