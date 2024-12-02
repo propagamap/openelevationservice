@@ -48,9 +48,6 @@ FROM polygons;
 )
 
 
-
-
-###--->Function that classifies elevations by range
 def classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
     
     range_div = (max_height - min_height + 1) / num_ranges
@@ -96,7 +93,6 @@ def classify_elevation(features_collection, min_height, max_height, num_ranges=2
     return classified_features
 
 
-####--->Function that performs the union used in group_tiles_by_height_parallel
 def process_union(input_data):
     height, polygons = input_data
     union_polygons = unary_union(polygons)
@@ -117,15 +113,13 @@ def process_union(input_data):
     return new_features
 
 
-####--->Function group_tiles_by_height_parallel --> call the process_union function
 def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
-    """Groups tiles by height and processes them in parallel."""
     
     groupings = {}
     
     for feature in data["features"]:
         height = feature["properties"]["heightBase"]
-        geometry = json.loads(feature["geometry"])  # Convert from string to dict
+        geometry = json.loads(feature["geometry"])  
         polygon = shape(geometry)
 
         if height not in groupings:
@@ -135,7 +129,6 @@ def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
     
     entries = [(height, polygons) for height, polygons in groupings.items()]
     
-    # Parallel processing
     with Pool(num_processes) as p:
         results = p.imap_unordered(process_union, entries, chunksize=chunk_size)
         

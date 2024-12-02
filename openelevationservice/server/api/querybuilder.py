@@ -68,7 +68,7 @@ def polygon_coloring_elevation(geometry, dataset):
     :rtype: string
     """
     Model = _getModel(dataset)
-    
+
     num_ranges = 23
     
     if geometry.geom_type == 'Polygon':
@@ -176,6 +176,7 @@ def polygon_coloring_elevation_parallel(geometry):
     """
 
     # Ensure input is a valid polygon
+    
     if geometry.geom_type != 'Polygon':
         raise InvalidUsage(400, 4002, f"Needs to be a Polygon, not a {geometry.geom_type}!")
 
@@ -291,7 +292,7 @@ def polygon_elevation(geometry, format_out, dataset):
     return result_geom
 
 
-def polygon_elevation_sql_simplificada_2_smt(geometry, dataset):
+def polygon_elevation_sql(geometry, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
     
