@@ -174,7 +174,7 @@ def polygon_coloring_elevation_parallel(geometry):
               - Average elevation in the polygon.
     :rtype: tuple(dict, list[float], float)
     """
-    
+
     # Ensure input is a valid polygon
     if geometry.geom_type != 'Polygon':
         raise InvalidUsage(400, 4002, f"Needs to be a Polygon, not a {geometry.geom_type}!")
@@ -291,7 +291,7 @@ def polygon_elevation(geometry, format_out, dataset):
     return result_geom
 
 
-def polygon_elevation_sql_simplificada_2_smt(geometry, format_out, dataset):
+def polygon_elevation_sql_simplificada_2_smt(geometry, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
     

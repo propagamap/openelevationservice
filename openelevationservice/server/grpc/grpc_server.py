@@ -90,7 +90,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
-        geom_queried = querybuilder.polygon_elevation_sql_simplificada_2_smt(geom, 'polygon', 'srtm')
+        geom_queried = querybuilder.polygon_elevation_sql_simplificada_2_smt(geom, 'srtm')
         
         result = []
         for point in list(geom_queried):

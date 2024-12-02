@@ -44,14 +44,12 @@ class LineResponse(_message.Message):
     def __init__(self, points: _Optional[_Iterable[_Union[LatLonElevation, _Mapping]]] = ...) -> None: ...
 
 class AreaRequest(_message.Message):
-    __slots__ = ("bottomLeft", "topRight", "useOldOES")
+    __slots__ = ("bottomLeft", "topRight")
     BOTTOMLEFT_FIELD_NUMBER: _ClassVar[int]
     TOPRIGHT_FIELD_NUMBER: _ClassVar[int]
-    USEOLDOES_FIELD_NUMBER: _ClassVar[int]
     bottomLeft: LatLon
     topRight: LatLon
-    useOldOES: int
-    def __init__(self, bottomLeft: _Optional[_Union[LatLon, _Mapping]] = ..., topRight: _Optional[_Union[LatLon, _Mapping]] = ..., useOldOES: _Optional[int] = ...) -> None: ...
+    def __init__(self, bottomLeft: _Optional[_Union[LatLon, _Mapping]] = ..., topRight: _Optional[_Union[LatLon, _Mapping]] = ...) -> None: ...
 
 class AreaPointsResponse(_message.Message):
     __slots__ = ("points",)
