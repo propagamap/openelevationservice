@@ -70,7 +70,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             [min_lon, min_lat]
         ]
 
-    ##Start-Original code for the AreaPointsElevation function
+    
     @handle_exceptions
     def AreaPointsElevation_(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
@@ -86,9 +86,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             ))
     
         return defs.AreaPointsResponse(points=result)
-    ##Fin-Original code for the AreaPointsElevation function
-
-    ##Start-Improvement code for AreaPointsElevation function
+    
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
@@ -103,8 +101,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             ))
         
         return defs.AreaPointsResponse(points=result)
-    ##End-Improvement code for AreaPointsElevation function
-    
+     
     
     def _create_proto_geo_polygon(self, coordinates):
         return defs.Area(boundaries=[
@@ -117,8 +114,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         ])
 
 
-    
-    ###Start-Original code for the AreaRangesElevation function
     @handle_exceptions
     def AreaRangesElevation_(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
@@ -145,10 +140,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             maxElevation=range_queried[1],
             avgElevation=avg_queried,
         )
-    ###End-Original code for the AreaRangesElevation function
+    
 
-
-    ###Start-Improvement-Parallelizing unions and classifying elevations by range
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
@@ -178,7 +171,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             maxElevation=int(range_queried[1]),
             avgElevation=avg_queried,
 )
-    ###End-Improvement-Parallelizing unions and classifying elevations by range
+
     
 
 def grpc_serve(port_url):

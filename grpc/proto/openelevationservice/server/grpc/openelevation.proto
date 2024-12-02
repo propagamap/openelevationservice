@@ -29,7 +29,6 @@ message LineResponse {
 message AreaRequest {
   LatLon bottomLeft = 1;
   LatLon topRight = 2;
-  int32 useOldOES = 3;
 }
 
 message AreaPointsResponse {

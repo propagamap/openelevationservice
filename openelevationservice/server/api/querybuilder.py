@@ -12,8 +12,6 @@ from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
-
-# Importing all the code that parallelizes elevation requests
 from openelevationservice.server.api.elevation_query_parallel import query, classify_elevation, group_tiles_by_height_parallel
 
 
@@ -54,7 +52,6 @@ def format_PixelAsGeoms(result_pixels):
            func.unnest(literal_column("ARRAY{}".format(heights)))
 
 
-###Start-Original code for the polygon_coloring_elevation function
 def polygon_coloring_elevation(geometry, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
@@ -160,10 +157,8 @@ def polygon_coloring_elevation(geometry, dataset):
                            'The requested geometry is outside the bounds of {}'.format(dataset))
     
     return result_geom, [min_height, max_height], avg_height
-##End-Original code for the polygon_coloring_elevation function
 
 
-##start-function polygon_coloring_elevation_parallel
 def polygon_coloring_elevation_parallel(geometry):
     """
     Processes elevation data in parallel for a polygon geometry and returns a JSON.
@@ -179,6 +174,7 @@ def polygon_coloring_elevation_parallel(geometry):
               - Average elevation in the polygon.
     :rtype: tuple(dict, list[float], float)
     """
+    
     # Ensure input is a valid polygon
     if geometry.geom_type != 'Polygon':
         raise InvalidUsage(400, 4002, f"Needs to be a Polygon, not a {geometry.geom_type}!")
@@ -223,10 +219,6 @@ def polygon_coloring_elevation_parallel(geometry):
     return features_collection, [min_height, max_height], avg_height
 
 
-##end-function polygon_coloring_elevation_parallel
-
-
-##Original code for the polygon_elevation function
 def polygon_elevation(geometry, format_out, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
@@ -297,10 +289,8 @@ def polygon_elevation(geometry, format_out, dataset):
                            'The requested geometry is outside the bounds of {}'.format(dataset))
         
     return result_geom
-##Fin-Original code for the polygon_elevation function
 
 
-##Start-Improvement code for polygon_elevation function
 def polygon_elevation_sql_simplificada_2_smt(geometry, format_out, dataset):
     """
     Performs PostGIS query to enrich a polygon geometry.
@@ -351,7 +341,6 @@ def polygon_elevation_sql_simplificada_2_smt(geometry, format_out, dataset):
             WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom)
             ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);
         """
-        #ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);-->measuring time with and without order by
 
         result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
             
@@ -365,10 +354,6 @@ def polygon_elevation_sql_simplificada_2_smt(geometry, format_out, dataset):
                            'The requested geometry is outside the bounds of {}'.format(dataset))
         
     return result_points
-
-##End-Improvement code for polygon_elevation function
-
-
 
 def line_elevation(geometry, format_out, dataset):
     """
@@ -456,7 +441,7 @@ def line_elevation(geometry, format_out, dataset):
     if result_geom == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
-        
+         
     return result_geom
 
 

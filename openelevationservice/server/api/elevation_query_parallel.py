@@ -5,7 +5,7 @@ from shapely.ops import unary_union
 from multiprocessing import Pool
 import math
 
-#Start-Query code
+
 query = text(
     """
     WITH query_geom AS (
@@ -18,11 +18,11 @@ polygons AS (
             (ST_PixelAsPolygons(
                 ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
                 1, False
-            )).geom AS geometry,  -- Extrae las celdas como geometría
+            )).geom AS geometry, 
             (ST_PixelAsPolygons(
                 ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
                 1, False
-            )).val AS height  -- Extrae el valor de elevación
+            )).val AS height  
         FROM query_geom 
         JOIN oes_cgiar 
         ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
@@ -46,10 +46,10 @@ FROM polygons;
 
     """
 )
-###End-Query code 
 
 
-####Start-Functions used in parallelization
+
+
 ###--->Function that classifies elevations by range
 def classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
     
@@ -149,4 +149,4 @@ def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
     return grouped_data
 
 
-####End-Functions used in parallelization
+
