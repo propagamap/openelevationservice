@@ -9,6 +9,7 @@ from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
 
+REFERENCE_AREA_THRESHOLD_KM2=40
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
@@ -147,7 +148,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
         
         # Evaluate if the area is less than or equal to 50 or greater.
-        if convert.calculate_geodesic_area_km2(geom) <= 40:
+        if convert.calculate_geodesic_area_km2(geom) <= REFERENCE_AREA_THRESHOLD_KM2:
     
             collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
         else:
