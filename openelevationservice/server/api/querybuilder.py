@@ -314,12 +314,12 @@ def polygon_elevation_sql(geometry, dataset):
     if geometry.geom_type == 'Polygon':
 
         session = db.get_session()
-        
+
         consulta_sql = """
             WITH polygon_geom AS (
-                SELECT ST_SetSRID(
-                        ST_GeomFromText(:wkt_poligono), 4326
-                    ) AS polygon
+            SELECT ST_SetSRID(
+                    ST_GeomFromText(:wkt_poligono), 4326
+                ) AS polygon
             ),
             intersecting_rasters AS (
                 SELECT r.rast, pg.polygon
@@ -331,7 +331,9 @@ def polygon_elevation_sql(geometry, dataset):
                 FROM intersecting_rasters ir
             ),
             pixel_geometries AS (
-                SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
+                SELECT 
+                    (ST_PixelAsCentroids(cr.clipped_rast)).geom AS pixel_geom,
+                    (ST_PixelAsCentroids(cr.clipped_rast)).val AS pixel_value
                 FROM clipped_rasters cr
             )
             SELECT 
@@ -341,6 +343,7 @@ def polygon_elevation_sql(geometry, dataset):
             FROM pixel_geometries pg, polygon_geom pg_geom
             WHERE ST_Covers(pg_geom.polygon, pg.pixel_geom)
             ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);
+
         """
 
         result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
