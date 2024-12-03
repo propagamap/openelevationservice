@@ -147,6 +147,9 @@ def polygon_coloring_elevation(geometry, dataset):
 
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
+    ###AAOR-Comment
+    print("Small area request processed without parallelization")
+    ###AAOR-Comment
     
     result_geom = query_final.scalar()
 
@@ -208,7 +211,7 @@ def polygon_coloring_elevation_parallel(geometry):
             num_processes=4,
             chunk_size=5
         )
-
+        
     except InvalidUsage as exc:
         # Re-raise application-specific exceptions
         raise exc
@@ -216,7 +219,10 @@ def polygon_coloring_elevation_parallel(geometry):
         # Handle general exceptions gracefully
         raise InvalidUsage(500, 4003, f"An error occurred while processing the geometry: {str(e)}")
 
-    # Return results
+    ###AAOR-Comment
+    print("Large area request processed with parallelization")
+    ###AAOR-Comment
+
     return features_collection, [min_height, max_height], avg_height
 
 

@@ -145,8 +145,15 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
+        
+        # Evaluate if the area is less than or equal to 50 or greater.
+        if convert.calculate_geodesic_area_km2(geom) <= 50:
+            print("Evaluated small area")
+            collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
+        else:
+            print("Evaluated large area")
+            collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_parallel(geom)
 
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_parallel(geom)
         
         result = []
         for feature in collection_queried['features']:
