@@ -6,47 +6,46 @@ from multiprocessing import Pool
 import math
 
 
-query = text(
+POLYGON_COLORING_ELEVATION_QUERY = text(
     """
     WITH query_geom AS (
-    SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
-),
-polygons AS (
-    SELECT *
-    FROM (
-        SELECT 
-            (ST_PixelAsPolygons(
-                ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-                1, False
-            )).geom AS geometry, 
-            (ST_PixelAsPolygons(
-                ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-                1, False
-            )).val AS height  
-        FROM query_geom 
-        JOIN oes_cgiar 
-        ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
-    ) AS subquery
-    WHERE height != 0  
-)
-SELECT jsonb_build_object(
-    'type', 'FeatureCollection',
-    'features', jsonb_agg(jsonb_build_object(
-        'type', 'Feature',
-        'geometry', ST_AsGeoJSON(geometry),
-        'properties', json_build_object(
-            'heightBase', height
+        SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
+        ),
+        polygons AS (
+            SELECT *
+            FROM (
+                SELECT 
+                    (ST_PixelAsPolygons(
+                        ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
+                        1, False
+                    )).geom AS geometry, 
+                    (ST_PixelAsPolygons(
+                        ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
+                        1, False
+                    )).val AS height  
+                FROM query_geom 
+                JOIN oes_cgiar 
+                ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
+            ) AS subquery
+            WHERE height != 0  
         )
-    ))
-) AS features_collection,
-MIN(height) AS min_height,
-MAX(height) AS max_height,
-AVG(height) AS avg_height
-FROM polygons;
+        SELECT jsonb_build_object(
+            'type', 'FeatureCollection',
+            'features', jsonb_agg(jsonb_build_object(
+                'type', 'Feature',
+                'geometry', ST_AsGeoJSON(geometry),
+                'properties', json_build_object(
+                    'heightBase', height
+                )
+            ))
+        ) AS features_collection,
+        MIN(height) AS min_height,
+        MAX(height) AS max_height,
+        AVG(height) AS avg_height
+        FROM polygons;
 
     """
 )
-
 
 def classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
     

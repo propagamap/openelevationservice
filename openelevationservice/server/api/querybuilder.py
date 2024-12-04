@@ -12,7 +12,7 @@ from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query_parallel import query, classify_elevation, group_tiles_by_height_parallel
+from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation, group_tiles_by_height_parallel
 
 
 log = get_logger(__name__)
@@ -174,18 +174,16 @@ def polygon_coloring_elevation_parallel(geometry):
               - Average elevation in the polygon.
     :rtype: tuple(dict, list[float], float)
     """
-
-    # Ensure input is a valid polygon
-    
+ 
     if geometry.geom_type != 'Polygon':
         raise InvalidUsage(400, 4002, f"Needs to be a Polygon, not a {geometry.geom_type}!")
-
-    polygon = str(geometry)  # Serialize geometry for query
+    
+    polygon = str(geometry)  
     session = db.get_session()
 
     try:
-        # Execute query with serialized polygon
-        result = session.execute(query, {"polygon": polygon})
+
+        result = session.execute(POLYGON_COLORING_ELEVATION_QUERY, {"polygon": polygon})
         row = result.fetchone()
 
         if not row:
@@ -193,7 +191,6 @@ def polygon_coloring_elevation_parallel(geometry):
 
         features_collection, min_height, max_height, avg_height = row
 
-        # Classify elevation data
         features_collection = classify_elevation(
             features_collection,
             min_height,
@@ -202,7 +199,6 @@ def polygon_coloring_elevation_parallel(geometry):
             no_data_value=-9999
         )
 
-        # Process tiles in parallel
         features_collection = group_tiles_by_height_parallel(
             features_collection,
             num_processes=4,
@@ -210,10 +206,11 @@ def polygon_coloring_elevation_parallel(geometry):
         )
         
     except InvalidUsage as exc:
-        # Re-raise application-specific exceptions
+
         raise exc
+    
     except Exception as e:
-        # Handle general exceptions gracefully
+    
         raise InvalidUsage(500, 4003, f"An error occurred while processing the geometry: {str(e)}")
 
     return features_collection, [min_height, max_height], avg_height
@@ -314,11 +311,11 @@ def polygon_elevation_sql(geometry, dataset):
 
         session = db.get_session()
         
-        consulta_sql = """
+        POLYGON_ELEVATION_QUERY   = """
             WITH polygon_geom AS (
-                SELECT ST_SetSRID(
-                        ST_GeomFromText(:wkt_poligono), 4326
-                    ) AS polygon
+            SELECT ST_SetSRID(
+                    ST_GeomFromText(:wkt_polygon), 4326
+                ) AS polygon
             ),
             intersecting_rasters AS (
                 SELECT r.rast, pg.polygon
@@ -330,7 +327,9 @@ def polygon_elevation_sql(geometry, dataset):
                 FROM intersecting_rasters ir
             ),
             pixel_geometries AS (
-                SELECT (ST_PixelAsPoints(cr.clipped_rast)).geom AS pixel_geom, (ST_PixelAsPoints(cr.clipped_rast)).val AS pixel_value
+                SELECT 
+                    (ST_PixelAsCentroids(cr.clipped_rast)).geom AS pixel_geom,
+                    (ST_PixelAsCentroids(cr.clipped_rast)).val AS pixel_value
                 FROM clipped_rasters cr
             )
             SELECT 
@@ -342,18 +341,17 @@ def polygon_elevation_sql(geometry, dataset):
             ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);
         """
 
-        result_points = session.execute(text(consulta_sql), {"wkt_poligono": geometry.wkt}).fetchall()
+        result_points = session.execute(text(POLYGON_ELEVATION_QUERY), {"wkt_polygon": geometry.wkt}).fetchall()
             
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
-
     
-    # Behaviour when all vertices are out of bounds
     if result_points == None:
         raise InvalidUsage(404, 4002,
                            'The requested geometry is outside the bounds of {}'.format(dataset))
         
     return result_points
+
 
 def line_elevation(geometry, format_out, dataset):
     """
