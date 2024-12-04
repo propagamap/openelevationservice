@@ -6,7 +6,7 @@ from multiprocessing import Pool
 import math
 
 
-query = text(
+POLYGON_COLORING_ELEVATION_QUERY = text(
     """
     WITH query_geom AS (
     SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
