@@ -71,22 +71,6 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         ]
 
     
-    # @handle_exceptions
-    # def AreaPointsElevation_(self, request, context):
-    #     geom = convert.polygon_to_geometry(self._format_area_request(request))
-    #     geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
-    #     geom_shaped = wkt.loads(geom_queried)
-        
-    #     result = []
-    #     for point in list(geom_shaped.coords):
-    #         result.append(defs.LatLonElevation(
-    #             lon=point[0],
-    #             lat=point[1],
-    #             elevation=int(point[2])
-    #         ))
-    
-    #     return defs.AreaPointsResponse(points=result)
-    
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
@@ -112,35 +96,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 ) for point in bondary
             ]) for bondary in coordinates            
         ])
-
-
-    # @handle_exceptions
-    # def AreaRangesElevation_(self, request, context):
-    #     geom = convert.polygon_to_geometry(self._format_area_request(request))
-    #     collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
-        
-    #     result = []
-    #     for feature in collection_queried['features']:
-    #         heightBase = int(feature['properties']['heightBase'])
-    #         if feature['geometry']['type'] == 'Polygon':
-    #             result.append(defs.UnitedArea(
-    #                 baseElevation=heightBase,
-    #                 area=self._create_proto_geo_polygon(feature['geometry']['coordinates']),
-    #             ))
-    #         else:
-    #             for polygon in feature['geometry']['coordinates']:
-    #                 result.append(defs.UnitedArea(
-    #                     baseElevation=heightBase,
-    #                     area=self._create_proto_geo_polygon(polygon),
-    #                 ))
-        
-    #     return defs.AreaRangesResponse(
-    #         unions=result,
-    #         minElevation=range_queried[0],
-    #         maxElevation=range_queried[1],
-    #         avgElevation=avg_queried,
-    #     )
-    
+   
 
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
