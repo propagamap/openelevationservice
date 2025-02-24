@@ -138,7 +138,7 @@ def process_union(input_data):
     return new_features
 
 
-def group_tiles_by_height_parallel(data, num_processes=12, chunk_size=5):
+def group_tiles_by_height_parallel(data, num_processes=None, chunk_size=5):
     """
     Groups tiles by elevation value and merges them in parallel for improved performance.
 
