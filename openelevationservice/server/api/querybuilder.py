@@ -15,6 +15,7 @@ from sqlalchemy.dialects.postgresql import array
 from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation, group_tiles_by_height_parallel
 
 
+
 log = get_logger(__name__)
 
 coord_precision = float(SETTINGS['coord_precision'])
