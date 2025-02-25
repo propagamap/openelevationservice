@@ -9,6 +9,8 @@ from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
 import time
+import os 
+
 
 
 def handle_exceptions(func):
@@ -101,6 +103,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
+        
+        print(os.process_cpu_count())
         
         start_time=time.time()
 
