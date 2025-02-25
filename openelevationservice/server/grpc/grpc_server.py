@@ -9,6 +9,7 @@ from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
 
+
 def handle_exceptions(func):
     def wrapper(self, request, context):
         try:
@@ -69,21 +70,22 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             [min_lon, min_lat]
         ]
 
+    
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
-        geom_queried = querybuilder.polygon_elevation(geom, 'polygon', 'srtm')
-        geom_shaped = wkt.loads(geom_queried)
+        geom_queried = querybuilder.polygon_elevation_sql(geom, 'srtm')
         
         result = []
-        for point in list(geom_shaped.coords):
+        for point in list(geom_queried):
             result.append(defs.LatLonElevation(
                 lon=point[0],
                 lat=point[1],
                 elevation=int(point[2])
             ))
-
+        
         return defs.AreaPointsResponse(points=result)
+     
     
     def _create_proto_geo_polygon(self, coordinates):
         return defs.Area(boundaries=[
@@ -94,22 +96,26 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                 ) for point in bondary
             ]) for bondary in coordinates            
         ])
+   
 
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
-        geom = convert.polygon_to_geometry(self._format_area_request(request))
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
+        geom = convert.polygon_to_geometry(self._format_area_request(request))     
+
+        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_parallel(geom)
         
         result = []
         for feature in collection_queried['features']:
+            geometry = feature['geometry']  
             heightBase = int(feature['properties']['heightBase'])
-            if feature['geometry']['type'] == 'Polygon':
+            
+            if geometry['type'] == 'Polygon':
                 result.append(defs.UnitedArea(
                     baseElevation=heightBase,
-                    area=self._create_proto_geo_polygon(feature['geometry']['coordinates']),
+                    area=self._create_proto_geo_polygon(geometry['coordinates']),
                 ))
             else:
-                for polygon in feature['geometry']['coordinates']:
+                for polygon in geometry['coordinates']:
                     result.append(defs.UnitedArea(
                         baseElevation=heightBase,
                         area=self._create_proto_geo_polygon(polygon),
@@ -117,10 +123,12 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         
         return defs.AreaRangesResponse(
             unions=result,
-            minElevation=range_queried[0],
-            maxElevation=range_queried[1],
+            minElevation=int(range_queried[0]),
+            maxElevation=int(range_queried[1]),
             avgElevation=avg_queried,
-        )
+)
+
+    
 
 def grpc_serve(port_url):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
