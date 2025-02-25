@@ -94,7 +94,7 @@ def polygon_coloring_elevation_parallel(geometry):
 
         features_collection = group_tiles_by_height_parallel(
             features_collection,
-            num_processes=4,
+            num_processes=None,
             chunk_size=5
         )
 
