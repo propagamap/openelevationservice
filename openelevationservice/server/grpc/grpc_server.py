@@ -104,7 +104,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
         
-        print(os.process_cpu_count())
+        logical_cpus = os.cpu_count()
+        print(logical_cpus)
         
         start_time=time.time()
 
