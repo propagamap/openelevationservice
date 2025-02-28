@@ -104,6 +104,10 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
                
+        logical_cpus = os.cpu_count()
+        print("logical_cpus: ", logical_cpus)
+        
+
         start_time=time.time()
 
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
