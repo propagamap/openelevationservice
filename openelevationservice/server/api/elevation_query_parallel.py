@@ -185,26 +185,10 @@ def group_tiles_by_height_parallel(data, num_processes=4, chunk_size=5):
     :returns: A feature collection with merged polygons grouped by elevation.
     :rtype: dict
     """
-    #print("data: ",data)
-
-    #print("-----------------")
+    
     entries=group_tiles_by_height(data)
-    #print("data: ",entries)
-    
-    # groupings = {}
-    
-    # for feature in data["features"]:
-    #     height = feature["properties"]["heightBase"]
-    #     geometry = json.loads(feature["geometry"])  
-    #     polygon = shape(geometry)
 
-    #     if height not in groupings:
-    #         groupings[height] = []
         
-    #     groupings[height].append(polygon)
-    
-    # entries = [(height, polygons) for height, polygons in groupings.items()]
-    
     with Pool(num_processes) as p:
         results = p.imap_unordered(process_union, entries, chunksize=chunk_size)
         
