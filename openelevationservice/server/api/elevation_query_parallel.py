@@ -138,7 +138,38 @@ def process_union(input_data):
     return new_features
 
 
-def group_tiles_by_height_parallel(data, num_processes=None, chunk_size=5):
+def group_tiles_by_height(data):
+    """
+    Agrupa los mosaicos por el valor de elevación.
+
+    :param data: Colección de características que contienen polígonos con valores de elevación.
+    :type data: dict
+
+    :returns: Entradas agrupadas para procesamiento en Cython (como lista de tuplas).
+    :rtype: list
+    """
+
+    # Agrupar por altura
+    groupings = {}
+    
+    for feature in data["features"]:
+        height = feature["properties"]["heightBase"]
+        geometry = json.loads(feature["geometry"])  
+        polygon = shape(geometry)
+
+        if height not in groupings:
+            groupings[height] = []
+        
+        groupings[height].append(polygon)
+    
+    # Convertir los grupos en una lista de tuplas (altura, lista de polígonos)
+    entries = [(height, polygons) for height, polygons in groupings.items()]
+
+    return entries
+
+
+
+def group_tiles_by_height_parallel(data, num_processes=4, chunk_size=5):
     """
     Groups tiles by elevation value and merges them in parallel for improved performance.
 
@@ -154,20 +185,25 @@ def group_tiles_by_height_parallel(data, num_processes=None, chunk_size=5):
     :returns: A feature collection with merged polygons grouped by elevation.
     :rtype: dict
     """
-    
-    groupings = {}
-    
-    for feature in data["features"]:
-        height = feature["properties"]["heightBase"]
-        geometry = json.loads(feature["geometry"])  
-        polygon = shape(geometry)
+    #print("data: ",data)
 
-        if height not in groupings:
-            groupings[height] = []
-        
-        groupings[height].append(polygon)
+    #print("-----------------")
+    entries=group_tiles_by_height(data)
+    #print("data: ",entries)
     
-    entries = [(height, polygons) for height, polygons in groupings.items()]
+    # groupings = {}
+    
+    # for feature in data["features"]:
+    #     height = feature["properties"]["heightBase"]
+    #     geometry = json.loads(feature["geometry"])  
+    #     polygon = shape(geometry)
+
+    #     if height not in groupings:
+    #         groupings[height] = []
+        
+    #     groupings[height].append(polygon)
+    
+    # entries = [(height, polygons) for height, polygons in groupings.items()]
     
     with Pool(num_processes) as p:
         results = p.imap_unordered(process_union, entries, chunksize=chunk_size)
