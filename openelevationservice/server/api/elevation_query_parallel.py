@@ -140,12 +140,12 @@ def process_union(input_data):
 
 def group_tiles_by_height(data):
     """
-    Agrupa los mosaicos por el valor de elevación.
+    Groups tiles by elevation value.
 
-    :param data: Colección de características que contienen polígonos con valores de elevación.
-    :type data: dict
+    :param data: Collection of features containing polygons with elevation values.
+    type data: dict
 
-    :returns: Entradas agrupadas para procesamiento en Cython (como lista de tuplas).
+    :returns: Grouped entries for Cython processing (as a list of tuples).
     :rtype: list
     """
 
