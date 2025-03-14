@@ -120,6 +120,7 @@ def process_union(input_data):
     :rtype: list[dict]
     """
     height, polygons = input_data
+    
     union_polygons = unary_union(polygons)
 
     if isinstance(union_polygons, Polygon):
@@ -149,7 +150,7 @@ def group_tiles_by_height(data):
     :rtype: list
     """
 
-    # Agrupar por altura
+    # group by height
     groupings = {}
     
     for feature in data["features"]:
@@ -162,7 +163,7 @@ def group_tiles_by_height(data):
         
         groupings[height].append(polygon)
     
-    # Convertir los grupos en una lista de tuplas (altura, lista de polígonos)
+    # Convert groups into a list of tuples (height, list of polygons)
     entries = [(height, polygons) for height, polygons in groupings.items()]
 
     return entries
