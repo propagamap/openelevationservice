@@ -93,23 +93,6 @@ def polygon_coloring_elevation_parallel(geometry):
             no_data_value=-9999
         )
 
-        # features_collection = classify_elevation_optimizada(
-        #     features_collection,
-        #     min_height,
-        #     max_height,
-        #     num_ranges=23,
-        #     no_data_value=-9999
-        # )
-
-        # features_collection = classify_elevation_ordenada(
-        #     features_collection,
-        #     min_height,
-        #     max_height,
-        #     num_ranges=23,
-        #     no_data_value=-9999
-        # )
-
-
         features_collection = group_tiles_by_height_sin_parallel(
             features_collection
         )

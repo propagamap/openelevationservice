@@ -120,57 +120,6 @@ def classify_elevation_ordenada(features_collection, min_height, max_height, num
     return classified_features
 
 
-def classify_elevation_optimizada(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
-    """
-    Categorizes elevation values into discrete ranges and assigns color bands.
-    """
-    
-    range_div = (max_height - min_height + 1) / num_ranges
-
-    height_groups = defaultdict(list)
-
-    for feature in features_collection['features']:
-        height = feature['properties']['heightBase']
-        height_groups[height].append(feature)
-
-    color_range_cache = {}
-
-    classified_features = {
-        "type": "FeatureCollection",
-        "features": []
-    }
-
-    for height, features in height_groups.items():
-        if height in color_range_cache:
-            color_range = color_range_cache[height]
-        else:
-            color_range = max(
-                min(
-                    math.floor((height - min_height) / range_div),
-                    num_ranges
-                ), -1
-            )
-            color_range_cache[height] = color_range
-
-        if color_range == -1:
-            height_base = no_data_value
-        else:
-            height_base = math.ceil(color_range * range_div + min_height)
-
-        for feature in features:
-            classified_feature = {
-                "type": "Feature",
-                "geometry": feature['geometry'],
-                "properties": {
-                    "heightBase": height_base,
-                    "colorRange": color_range
-                }
-            }
-            classified_features["features"].append(classified_feature)
-
-    return classified_features
-
-
 def classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
     """
     Categorizes elevation values into discrete ranges and assigns color bands.
