@@ -12,8 +12,11 @@ from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation, group_tiles_by_height_parallel
+from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation, group_tiles_by_height_parallel, classify_elevation_optimizada, classify_elevation_ordenada, group_tiles_by_height_sin_parallel 
 
+#AAOR-test
+import cProfile
+import pstats
 
 log = get_logger(__name__)
 
@@ -52,6 +55,63 @@ def format_PixelAsGeoms(result_pixels):
            func.unnest(literal_column("ARRAY{}".format(heights)))
 
 
+
+
+def polygon_coloring_elevation_parallel_(geometry):
+    """
+    Processes elevation data in parallel for a polygon geometry and returns a JSON.
+    """
+    if geometry.geom_type != 'Polygon':
+        raise InvalidUsage(400, 4002, f"Needs to be a Polygon, not a {geometry.geom_type}!")
+
+    polygon = str(geometry)  
+    session = db.get_session()
+
+    try:
+        # Iniciar el perfilador
+        profiler = cProfile.Profile()
+        profiler.enable()  # Activar el perfilador
+
+        # Ejecutar la consulta a la base de datos
+        result = session.execute(POLYGON_COLORING_ELEVATION_QUERY, {"polygon": polygon})
+        row = result.fetchone()
+
+        if not row:
+            raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
+
+        features_collection, min_height, max_height, avg_height = row
+
+        # Medir el tiempo de classify_elevation_optimizada
+        # profiler.runctx(
+        #     'features_collection = classify_elevation_optimizada(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999)',
+        #     globals(),
+        #     locals()
+        # )
+
+        # Medir el tiempo de group_tiles_by_height_parallel
+        profiler.runctx(
+            'features_collection = group_tiles_by_height_parallel(features_collection, num_processes=4, chunk_size=5)',
+            globals(),
+            locals()
+        )
+
+        # Desactivar el perfilador
+        profiler.disable()
+
+        # Guardar el perfil en un archivo
+        profiler.dump_stats('perfil_polygon_coloring.prof')
+
+        # Leer y mostrar el perfil
+        p = pstats.Stats('perfil_polygon_coloring.prof')
+        p.strip_dirs().sort_stats('time').print_stats()
+
+    except InvalidUsage as exc:
+        raise exc
+    except Exception as e:
+        raise InvalidUsage(500, 4003, f"An error occurred while processing the geometry: {str(e)}")
+
+    return features_collection, [min_height, max_height], avg_height
+
 def polygon_coloring_elevation_parallel(geometry):
     """
     Processes elevation data in parallel for a polygon geometry and returns a JSON.
@@ -84,7 +144,23 @@ def polygon_coloring_elevation_parallel(geometry):
 
         features_collection, min_height, max_height, avg_height = row
 
-        features_collection = classify_elevation(
+        # features_collection = classify_elevation(
+        #     features_collection,
+        #     min_height,
+        #     max_height,
+        #     num_ranges=23,
+        #     no_data_value=-9999
+        # )
+
+        # features_collection = classify_elevation_optimizada(
+        #     features_collection,
+        #     min_height,
+        #     max_height,
+        #     num_ranges=23,
+        #     no_data_value=-9999
+        # )
+
+        features_collection = classify_elevation_ordenada(
             features_collection,
             min_height,
             max_height,
@@ -92,10 +168,15 @@ def polygon_coloring_elevation_parallel(geometry):
             no_data_value=-9999
         )
 
-        features_collection = group_tiles_by_height_parallel(
-            features_collection,
-            num_processes=4,
-            chunk_size=5
+
+        # features_collection = group_tiles_by_height_parallel(
+        #     features_collection,
+        #     num_processes=4,
+        #     chunk_size=5
+        # )
+
+        features_collection = group_tiles_by_height_sin_parallel(
+            features_collection
         )
 
     except InvalidUsage as exc:
