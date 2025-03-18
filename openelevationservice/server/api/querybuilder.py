@@ -12,9 +12,7 @@ from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation, classify_elevation_optimizada, classify_elevation_ordenada, group_tiles_by_height_sin_parallel 
-
-
+from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation_ordered, classify_elevation, group_tiles_by_height_without_parallel 
 log = get_logger(__name__)
 
 coord_precision = float(SETTINGS['coord_precision'])
@@ -93,7 +91,17 @@ def polygon_coloring_elevation_parallel(geometry):
             no_data_value=-9999
         )
 
-        features_collection = group_tiles_by_height_sin_parallel(
+    
+        # features_collection = classify_elevation_ordered(
+        #     features_collection,
+        #     min_height,
+        #     max_height,
+        #     num_ranges=23,
+        #     no_data_value=-9999
+        # )
+
+
+        features_collection = group_tiles_by_height_without_parallel(
             features_collection
         )
 

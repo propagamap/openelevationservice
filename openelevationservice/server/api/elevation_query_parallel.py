@@ -4,12 +4,6 @@ from shapely.geometry import shape, mapping, Polygon, MultiPolygon
 from shapely.ops import unary_union
 import math
 
-#AAOR-test
-import time
-from collections import defaultdict
-
-
-
 
 POLYGON_COLORING_ELEVATION_QUERY = text(
     """
@@ -54,7 +48,7 @@ FROM polygons;
 
 
 
-def classify_elevation_ordenada(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
+def classify_elevation_ordered(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
     """
     Categorizes elevation values into discrete ranges and assigns color bands.
     Also ensures that the output features are sorted by elevation.
@@ -241,7 +235,7 @@ def group_tiles_by_height(data):
     return entries
 
 
-def group_tiles_by_height_sin_parallel(data):
+def group_tiles_by_height_without_parallel(data):
     """
     Groups tiles by elevation value and merges them in parallel for improved performance.
 
