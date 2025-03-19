@@ -1,4 +1,6 @@
 from concurrent import futures
+import os
+import time
 from sqlalchemy.exc import SQLAlchemyError
 from openelevationservice.server.api import querybuilder, views
 from openelevationservice.server.api.api_exceptions import InvalidUsage
@@ -97,6 +99,12 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
+        
+        logical_cpus = os.cpu_count()
+        print("logical_cpus: ", logical_cpus)
+        
+        start_time=time.time()
+        
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
         
@@ -114,6 +122,10 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                         baseElevation=heightBase,
                         area=self._create_proto_geo_polygon(polygon),
                     ))
+                    
+        end_time=time.time()
+        duration=end_time-start_time
+        print(f"Execution time: {duration:.4f}")
         
         return defs.AreaRangesResponse(
             unions=result,
