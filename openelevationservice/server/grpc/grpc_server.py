@@ -102,7 +102,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     def AreaRangesElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
 
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_parallel(geom)
+        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_without_parallel(geom)
         
         result = []
         for feature in collection_queried['features']:

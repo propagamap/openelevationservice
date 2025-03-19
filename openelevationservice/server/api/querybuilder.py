@@ -51,7 +51,7 @@ def format_PixelAsGeoms(result_pixels):
 
 
 
-def polygon_coloring_elevation_parallel(geometry):
+def polygon_coloring_elevation_without_parallel(geometry):
     """
     Processes elevation data in parallel for a polygon geometry and returns a JSON.
 
