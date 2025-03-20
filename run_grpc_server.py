@@ -6,7 +6,7 @@ log = get_logger(__name__)
 
 def main():
     """Starts the gRPC server"""
-    grpc_url = '0.0.0.0:5050'
+    grpc_url = '0.0.0.0:5051'
     log.info("gRPC server starting on port {}".format(grpc_url))
     grpc_serve(grpc_url)
 
