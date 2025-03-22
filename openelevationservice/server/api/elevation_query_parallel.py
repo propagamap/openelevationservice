@@ -46,8 +46,6 @@ FROM polygons;
     """
 )
 
-
-
 def classify_elevation_ordered(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
     """
     Categorizes elevation values into discrete ranges and assigns color bands.
