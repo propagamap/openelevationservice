@@ -12,7 +12,7 @@ from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation_ordered, classify_elevation, group_tiles_by_height_without_parallel 
+from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, group_tiles_by_height_without_parallel 
 log = get_logger(__name__)
 
 coord_precision = float(SETTINGS['coord_precision'])
@@ -83,13 +83,20 @@ def polygon_coloring_elevation_without_parallel(geometry):
 
         features_collection, min_height, max_height, avg_height = row
 
-        features_collection = classify_elevation(
+        features_collection = group_tiles_by_height_without_parallel(
             features_collection,
             min_height,
             max_height,
-            num_ranges=23,
-            no_data_value=-9999
+            num_ranges=23
         )
+
+        # features_collection = classify_elevation(
+        #     features_collection,
+        #     min_height,
+        #     max_height,
+        #     num_ranges=23,
+        #     no_data_value=-9999
+        # )
 
     
         # features_collection = classify_elevation_ordered(
@@ -101,9 +108,9 @@ def polygon_coloring_elevation_without_parallel(geometry):
         # )
 
 
-        features_collection = group_tiles_by_height_without_parallel(
-            features_collection
-        )
+        # features_collection = group_tiles_by_height_without_parallel(
+        #     features_collection
+        # )
 
     except InvalidUsage as exc:
         
