@@ -78,6 +78,8 @@ def polygon_coloring_elevation_without_parallel(geometry):
         result = session.execute(POLYGON_COLORING_ELEVATION_QUERY, {"polygon": polygon})
         row = result.fetchone()
 
+        print("row", row)
+
         if not row:
             raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
 
@@ -89,28 +91,6 @@ def polygon_coloring_elevation_without_parallel(geometry):
             max_height,
             num_ranges=23
         )
-
-        # features_collection = classify_elevation(
-        #     features_collection,
-        #     min_height,
-        #     max_height,
-        #     num_ranges=23,
-        #     no_data_value=-9999
-        # )
-
-    
-        # features_collection = classify_elevation_ordered(
-        #     features_collection,
-        #     min_height,
-        #     max_height,
-        #     num_ranges=23,
-        #     no_data_value=-9999
-        # )
-
-
-        # features_collection = group_tiles_by_height_without_parallel(
-        #     features_collection
-        # )
 
     except InvalidUsage as exc:
         
