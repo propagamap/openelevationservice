@@ -97,7 +97,7 @@ def group_and_union(features_collection, min_height, max_height, num_ranges):
     
     return new_features
 
-def group_tiles_by_height_without_parallel(features_collection,min_height,max_height,num_ranges):
+def group_tiles_by_height(features_collection,min_height,max_height,num_ranges):
     """
     Groups tiles by elevation value and merges them in parallel for improved performance.
 

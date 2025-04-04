@@ -12,7 +12,7 @@ from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, group_tiles_by_height_without_parallel 
+from openelevationservice.server.api.elevation_query_constrained_approach import POLYGON_COLORING_ELEVATION_QUERY, group_tiles_by_height 
 
 log = get_logger(__name__)
 
@@ -51,7 +51,7 @@ def format_PixelAsGeoms(result_pixels):
            func.unnest(literal_column("ARRAY{}".format(heights)))
 
 
-def polygon_coloring_elevation_without_parallel(geometry):
+def polygon_coloring_elevation_constrained_approach(geometry):
     """
     Processes elevation data in parallel for a polygon geometry and returns a JSON.
 
@@ -83,7 +83,7 @@ def polygon_coloring_elevation_without_parallel(geometry):
 
         features_collection, min_height, max_height, avg_height = row
 
-        features_collection = group_tiles_by_height_without_parallel(
+        features_collection = group_tiles_by_height(
             features_collection,
             min_height,
             max_height,

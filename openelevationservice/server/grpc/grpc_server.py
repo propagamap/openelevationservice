@@ -111,7 +111,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
 
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_without_parallel(geom)
+        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_constrained_approach(geom)
         
         result = []
         for feature in collection_queried['features']:
