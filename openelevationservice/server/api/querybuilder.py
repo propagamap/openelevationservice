@@ -13,6 +13,7 @@ from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
 from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, group_tiles_by_height_without_parallel 
+
 log = get_logger(__name__)
 
 coord_precision = float(SETTINGS['coord_precision'])
@@ -50,7 +51,6 @@ def format_PixelAsGeoms(result_pixels):
            func.unnest(literal_column("ARRAY{}".format(heights)))
 
 
-
 def polygon_coloring_elevation_without_parallel(geometry):
     """
     Processes elevation data in parallel for a polygon geometry and returns a JSON.
@@ -77,8 +77,6 @@ def polygon_coloring_elevation_without_parallel(geometry):
         
         result = session.execute(POLYGON_COLORING_ELEVATION_QUERY, {"polygon": polygon})
         row = result.fetchone()
-
-        print("row", row)
 
         if not row:
             raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")

@@ -1,16 +1,10 @@
 from sqlalchemy import text
-import json
-from shapely.geometry import shape, mapping, Polygon, MultiPolygon
+from shapely.geometry import mapping, Polygon, MultiPolygon
 #from shapely.ops import unary_union
-import math
 
-#AAOR-test-start
-from tool_test import measure_time
-import time
-import json
+import math
 from collections import defaultdict
 from shapely import from_geojson, unary_union
-#AAOR-test-end
 
 
 POLYGON_COLORING_ELEVATION_QUERY = text(
@@ -54,9 +48,6 @@ FROM polygons;
     """
 )
 
-#new-code
-
-@measure_time #AAOR-test
 def group_and_union(features_collection, min_height, max_height, num_ranges):
     """
     Agrupa polígonos por altura, realiza uniones y devuelve features GeoJSON
@@ -67,14 +58,14 @@ def group_and_union(features_collection, min_height, max_height, num_ranges):
     range_div = (max_height - min_height + 1) / num_ranges
     groupings = defaultdict(list)
     
-    # Primera pasada: agrupar geometrías (manteniendo JSON)
+    
     for feature in features_collection['features']:
         height = feature['properties']['heightBase']
         color_range = math.floor((height - min_height) / range_div)
         height_base = math.ceil(color_range * range_div + min_height)
-        groupings[height_base].append(feature['geometry'])  # Guardamos el string GeoJSON
+        groupings[height_base].append(feature['geometry'])  
     
-    # Segunda pasada: procesamiento y formato de salida
+   
     new_features = []
     
     for height, geojson_strings in groupings.items():
@@ -82,14 +73,14 @@ def group_and_union(features_collection, min_height, max_height, num_ranges):
             continue
             
         if len(geojson_strings) == 1:
-            # Caso simple: un solo polígono (sin necesidad de unión)
+            
             polygon = from_geojson(geojson_strings[0])
         else:
-            # Unión de múltiples polígonos
+            
             geoms = [from_geojson(s) for s in geojson_strings]
             polygon = unary_union(geoms)
         
-        # Manejo de MultiPolygon resultante de uniones
+       
         if polygon.geom_type == 'MultiPolygon':
             for poly in polygon.geoms:
                 new_features.append({
@@ -105,16 +96,8 @@ def group_and_union(features_collection, min_height, max_height, num_ranges):
             })
     
     return new_features
-    
-   
-@measure_time #AAOR-test
-#def group_tiles_by_height_without_parallel(data):
-def group_tiles_by_height_without_parallel(
-            features_collection,
-            min_height,
-            max_height,
-            num_ranges
-        ):
+
+def group_tiles_by_height_without_parallel(features_collection,min_height,max_height,num_ranges):
     """
     Groups tiles by elevation value and merges them in parallel for improved performance.
 
@@ -131,20 +114,12 @@ def group_tiles_by_height_without_parallel(
     :rtype: dict
     """
     
-    #entries=group_tiles_by_height(data)
     entries=group_and_union(features_collection, min_height, max_height, num_ranges)
     
-    #print(" ")
-    #print("entries of group_and_union", entries)
     
-    
-
     new_features = []
     
     new_features.extend(entries) 
-    
-    #print("new_features", new_features) 
-  
    
     grouped_data = {
         "type": "FeatureCollection",
@@ -153,7 +128,4 @@ def group_tiles_by_height_without_parallel(
     
 
     return grouped_data
-
-#fin-nuevo enfoque
-#end-new-code
 
