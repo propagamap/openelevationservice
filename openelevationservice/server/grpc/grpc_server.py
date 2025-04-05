@@ -140,9 +140,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             maxElevation=int(range_queried[1]),
             avgElevation=avg_queried,
 )
-
-
-    
+ 
 
 def grpc_serve(port_url):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

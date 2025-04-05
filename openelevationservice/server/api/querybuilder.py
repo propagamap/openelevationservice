@@ -12,7 +12,7 @@ from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query_constrained_approach import POLYGON_COLORING_ELEVATION_QUERY, group_tiles_by_height 
+from openelevationservice.server.api.elevation_query_constrained_approach import POLYGON_COLORING_ELEVATION_QUERY, group_tiles_by_height, group_and_union_polygons
 
 log = get_logger(__name__)
 
@@ -53,7 +53,7 @@ def format_PixelAsGeoms(result_pixels):
 
 def polygon_coloring_elevation_constrained_approach(geometry):
     """
-    Processes elevation data in parallel for a polygon geometry and returns a JSON.
+    Processes elevation data for a polygon geometry and returns a JSON.
 
     :param geometry: Input 2D polygon geometry to process.
     :type geometry: Shapely geometry
@@ -83,12 +83,14 @@ def polygon_coloring_elevation_constrained_approach(geometry):
 
         features_collection, min_height, max_height, avg_height = row
 
-        features_collection = group_tiles_by_height(
-            features_collection,
-            min_height,
-            max_height,
-            num_ranges=23
-        )
+        # features_collection = group_tiles_by_height(
+        #     features_collection,
+        #     min_height,
+        #     max_height,
+        #     num_ranges=23
+        # )
+
+        features_collection = group_and_union_polygons(features_collection, min_height, max_height, num_ranges=23)
 
     except InvalidUsage as exc:
         
