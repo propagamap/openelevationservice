@@ -46,91 +46,9 @@ FROM polygons;
     """
 )
 
-def group_and_union(features_collection, min_height, max_height, num_ranges):
-    """
-    Groups polygons by height, joins and returns GeoJSON features
-    
-    :param features_collection: GeoJSON FeatureCollection
-    :return: List of GeoJSON features with polygons joined by height
-    """
-    range_div = (max_height - min_height + 1) / num_ranges
-    groupings = defaultdict(list)
-    
-    
-    for feature in features_collection['features']:
-        height = feature['properties']['heightBase']
-        color_range = math.floor((height - min_height) / range_div)
-        height_base = math.ceil(color_range * range_div + min_height)
-        groupings[height_base].append(feature['geometry'])  
-    
-   
-    new_features = []
-    
-    for height, geojson_strings in groupings.items():
-        if not geojson_strings:
-            continue
-            
-        if len(geojson_strings) == 1:
-            
-            polygon = from_geojson(geojson_strings[0])
-        else:
-            
-            geoms = [from_geojson(s) for s in geojson_strings]
-            polygon = unary_union(geoms)
-        
-       
-        if polygon.geom_type == 'MultiPolygon':
-            for poly in polygon.geoms:
-                new_features.append({
-                    "type": "Feature",
-                    "geometry": mapping(poly),
-                    "properties": {"heightBase": height}
-                })
-        else:
-            new_features.append({
-                "type": "Feature",
-                "geometry": mapping(polygon),
-                "properties": {"heightBase": height}
-            })
-    
-    return new_features
-
-def group_tiles_by_height(features_collection,min_height,max_height,num_ranges):
-    """
-    Groups tiles by elevation value and merges them in parallel for improved performance.
-
-    :param data: Feature collection containing polygons with elevation values.
-    :type data: dict
-
-    :param num_processes: Number of parallel processes to use (default: 12).
-    :type num_processes: int
-
-    :param chunk_size: Number of elements per processing chunk (default: 5).
-    :type chunk_size: int
-
-    :returns: A feature collection with merged polygons grouped by elevation.
-    :rtype: dict
-    """
-    
-    entries=group_and_union(features_collection, min_height, max_height, num_ranges)
-    
-    
-    new_features = []
-    
-    new_features.extend(entries) 
-   
-    grouped_data = {
-        "type": "FeatureCollection",
-        "features": new_features
-    }
-    
-
-    return grouped_data
-
 def group_and_union_polygons(features_collection, min_height, max_height, num_ranges):
     """
     Groups polygons by height ranges, performs unions, and returns a GeoJSON FeatureCollection.
-    Combines the functionality of group_and_union and group_tiles_by_height in a single optimized function.
 
     :param features_collection: Input GeoJSON FeatureCollection
     :param min_height: Minimum height value for classification
@@ -138,32 +56,28 @@ def group_and_union_polygons(features_collection, min_height, max_height, num_ra
     :param num_ranges: Number of height ranges to create
     :return: GeoJSON FeatureCollection with merged polygons grouped by height
     """
-    # Calculate height ranges
+    
     range_div = (max_height - min_height + 1) / num_ranges
     groupings = defaultdict(list)
     
-    # Group features by height
     for feature in features_collection['features']:
         height = feature['properties']['heightBase']
         color_range = math.floor((height - min_height) / range_div)
         height_base = math.ceil(color_range * range_div + min_height)
         groupings[height_base].append(feature['geometry'])
     
-    # Process groupings
     features = []
     
     for height, geojson_strings in groupings.items():
         if not geojson_strings:
             continue
             
-        # Handle single or multiple polygons
         if len(geojson_strings) == 1:
             polygon = from_geojson(geojson_strings[0])
         else:
             geoms = [from_geojson(s) for s in geojson_strings]
             polygon = unary_union(geoms)
-        
-        # Handle MultiPolygon cases
+       
         if polygon.geom_type == 'MultiPolygon':
             for poly in polygon.geoms:
                 features.append({
@@ -178,7 +92,6 @@ def group_and_union_polygons(features_collection, min_height, max_height, num_ra
                 "properties": {"heightBase": height}
             })
     
-    # Return as proper FeatureCollection
     return {
         "type": "FeatureCollection",
         "features": features

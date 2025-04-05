@@ -12,7 +12,7 @@ from sqlalchemy import func, literal_column, case, text
 from sqlalchemy.types import JSON
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query_constrained_approach import POLYGON_COLORING_ELEVATION_QUERY, group_tiles_by_height, group_and_union_polygons
+from openelevationservice.server.api.elevation_query_constrained_approach import POLYGON_COLORING_ELEVATION_QUERY, group_and_union_polygons
 
 log = get_logger(__name__)
 
@@ -82,13 +82,6 @@ def polygon_coloring_elevation_constrained_approach(geometry):
             raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
 
         features_collection, min_height, max_height, avg_height = row
-
-        # features_collection = group_tiles_by_height(
-        #     features_collection,
-        #     min_height,
-        #     max_height,
-        #     num_ranges=23
-        # )
 
         features_collection = group_and_union_polygons(features_collection, min_height, max_height, num_ranges=23)
 
