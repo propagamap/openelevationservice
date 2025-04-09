@@ -12,7 +12,7 @@ from sqlalchemy import func, literal_column, case, text
 
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query import PIXEL_POLYGONS_WITH_HEIGHT_QUERY, group_and_union_shapely_geometries
+from openelevationservice.server.api.elevation_query_area_union import PIXEL_POLYGONS_WITH_HEIGHT_QUERY, group_and_union_geometries
 
 from shapely import wkt
 
@@ -53,7 +53,7 @@ def format_PixelAsGeoms(result_pixels):
            func.unnest(literal_column("ARRAY{}".format(heights)))
 
 
-def polygon_coloring_elevation(geometry):
+def polygon_union_by_elevation(geometry):
     """
     Processes elevation data for a polygon geometry and returns grouped/unioned geometries.
 
@@ -87,7 +87,7 @@ def polygon_coloring_elevation(geometry):
         max_height = max(heights)
         avg_height = sum(heights) / len(heights)
 
-        features_collection = group_and_union_shapely_geometries(
+        features_collection = group_and_union_geometries(
             geometries_by_height,
             min_height,
             max_height,
@@ -99,7 +99,7 @@ def polygon_coloring_elevation(geometry):
     except InvalidUsage as exc:
         raise exc
     except Exception as e:
-        raise InvalidUsage(500, 4003, f"Error procesando geometría: {str(e)}")
+        raise InvalidUsage(500, 4003, f"Error processing geometry: {str(e)}")
 
 
 def polygon_elevation_sql(geometry, dataset):

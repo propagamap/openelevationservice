@@ -33,7 +33,7 @@ WHERE height != 0;
     """
 )
 
-def group_and_union_shapely_geometries(geometries_by_height, min_height, max_height, num_ranges):
+def group_and_union_geometries(geometries_by_height, min_height, max_height, num_ranges):
     """
     Groups Shapely geometries by elevation and unions them per range.
 
