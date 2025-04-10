@@ -83,6 +83,8 @@ def polygon_union_by_elevation(geometry):
         geometries_by_height = [(wkt.loads(wkt_str), height) for wkt_str, height in rows]
         heights = [h for _, h in geometries_by_height]
 
+        print("geometries_by_height", geometries_by_height)
+
         min_height = min(heights)
         max_height = max(heights)
         avg_height = sum(heights) / len(heights)
