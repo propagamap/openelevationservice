@@ -5,6 +5,11 @@ from collections import defaultdict
 from shapely import unary_union
 
 
+#test-AAOR
+import time
+#End test-AAOR
+
+
 PIXEL_POLYGONS_WITH_HEIGHT_QUERY = text(
     """
     WITH query_geom AS (
@@ -44,6 +49,7 @@ def group_and_union_geometries(geometries_by_height, min_height, max_height, num
     :return: GeoJSON FeatureCollection with unioned geometries
     """
 
+    start_time=time.time()
     range_div = (max_height - min_height + 1) / num_ranges
     groupings = defaultdict(list)
 
@@ -51,7 +57,14 @@ def group_and_union_geometries(geometries_by_height, min_height, max_height, num
         color_range = math.floor((height - min_height) / range_div)
         height_base = math.ceil(color_range * range_div + min_height)
         groupings[height_base].append(geom)
+    
+    end_time=time.time()
+    duration=end_time-start_time
+    print("")
+    print(f"Execution time to group: {duration:.4f}")
 
+
+    start_time=time.time()
     features = []
 
     for height, geoms in groupings.items():
@@ -73,6 +86,10 @@ def group_and_union_geometries(geometries_by_height, min_height, max_height, num
                 "geometry": mapping(unioned),
                 "properties": {"heightBase": height}
             })
+    end_time=time.time()
+    duration=end_time-start_time
+    print("")
+    print(f"Execution time to union: {duration:.4f}")
 
     return {
         "type": "FeatureCollection",

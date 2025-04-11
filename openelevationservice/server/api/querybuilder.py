@@ -16,6 +16,10 @@ from openelevationservice.server.api.elevation_query_area_union import PIXEL_POL
 
 from shapely import wkt
 
+#test-AAOR
+import time
+#End test-AAOR
+
 log = get_logger(__name__)
 
 coord_precision = float(SETTINGS['coord_precision'])
@@ -73,21 +77,40 @@ def polygon_union_by_elevation(geometry):
     session = db.get_session()
 
     try:
-        
+        start_time=time.time()
+
         result = session.execute(PIXEL_POLYGONS_WITH_HEIGHT_QUERY, {"polygon": polygon_wkt})
         rows = result.fetchall()
+
+        end_time=time.time()
+        duration=end_time-start_time
+        print("")
+        print(f"Execution time to result-row: {duration:.4f}")
 
         if not rows:
             raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
 
+        print(type(rows))
+        #print("rows", rows)
+        print("")
+
+        start_time=time.time()
+
         geometries_by_height = [(wkt.loads(wkt_str), height) for wkt_str, height in rows]
         heights = [h for _, h in geometries_by_height]
 
-        print("geometries_by_height", geometries_by_height)
+        print(type(geometries_by_height))
+        #print("geometries_by_height", geometries_by_height)
+        print("")
 
         min_height = min(heights)
         max_height = max(heights)
         avg_height = sum(heights) / len(heights)
+
+        end_time=time.time()
+        duration=end_time-start_time
+        print("")
+        print(f"Execution time to max, min and avg: {duration:.4f}")
 
         features_collection = group_and_union_geometries(
             geometries_by_height,

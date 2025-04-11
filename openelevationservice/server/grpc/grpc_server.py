@@ -9,6 +9,9 @@ from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
 
+import time
+import os 
+
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
@@ -100,6 +103,13 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
+
+        logical_cpus = os.cpu_count()
+        print("logical_cpus: ", logical_cpus)
+        print("")
+
+
+        start_time=time.time()
                   
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
 
@@ -121,6 +131,11 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                         baseElevation=heightBase,
                         area=self._create_proto_geo_polygon(polygon),
                     ))
+        
+        end_time=time.time()
+        duration=end_time-start_time
+        print("")
+        print(f"Execution time: {duration:.4f}")
 
         return defs.AreaRangesResponse(
             unions=result,
