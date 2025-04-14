@@ -18,6 +18,7 @@ from shapely import wkt
 
 #test-AAOR
 import time
+from openelevationservice.server.api.min_max_avg_numpy import process_data
 #End test-AAOR
 
 log = get_logger(__name__)
@@ -87,6 +88,16 @@ def polygon_union_by_elevation(geometry):
         print("")
         print(f"Execution time to result-row: {duration:.4f}")
 
+
+        start_time=time.time()
+
+        result = process_data(rows)
+
+        end_time=time.time()
+        duration=end_time-start_time
+        print("")
+        print(f"Execution time to process_data: {duration:.4f}")
+
         if not rows:
             raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
 
@@ -99,7 +110,7 @@ def polygon_union_by_elevation(geometry):
         geometries_by_height = [(wkt.loads(wkt_str), height) for wkt_str, height in rows]
         heights = [h for _, h in geometries_by_height]
 
-        print(type(geometries_by_height))
+        #print(type(geometries_by_height))
         #print("geometries_by_height", geometries_by_height)
         print("")
 
