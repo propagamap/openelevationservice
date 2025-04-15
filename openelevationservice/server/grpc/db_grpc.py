@@ -19,6 +19,11 @@ class Database:
 
     def get_session(self):
         return self.session
+    
+    def renew_session(self):
+        self.session.close()
+        sm = sessionmaker(bind=self.engine)
+        self.session = sm()
 
 log = logger.get_logger(__name__)
 table_name = SETTINGS['provider_parameters']['table_name']

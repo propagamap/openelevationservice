@@ -2,6 +2,7 @@ from concurrent import futures
 from sqlalchemy.exc import SQLAlchemyError
 from openelevationservice.server.api import querybuilder, views
 from openelevationservice.server.api.api_exceptions import InvalidUsage
+from openelevationservice.server.grpc.db_grpc import db
 from openelevationservice.server.utils import convert
 import grpc
 from grpc_reflection.v1alpha import reflection
@@ -20,7 +21,8 @@ def handle_exceptions(func):
         except InvalidUsage as error:
             context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
         except SQLAlchemyError as error:
-            context.abort(grpc.StatusCode.INTERNAL, 'Could not connect to database.')
+            db.renew_session()
+            context.abort(grpc.StatusCode.INTERNAL, 'Could not connect to database. Try again in a few seconds later.')
         except Exception as error:
             print(error)
             context.abort(grpc.StatusCode.INTERNAL, 'An unexpected error occurred.')
