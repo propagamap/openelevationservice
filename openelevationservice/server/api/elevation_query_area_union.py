@@ -4,34 +4,88 @@ import math
 from collections import defaultdict
 from shapely import unary_union
 
+#OLD-Original
+# PIXEL_POLYGONS_WITH_HEIGHT_QUERY = text(
+#     """
+#     WITH query_geom AS (
+#     SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
+# ),
+# pixels AS (
+#     SELECT 
+#         (ST_PixelAsPolygons(
+#             ST_Clip(oes_cgiar.rast, query_geom.geom, -32768),
+#             1, False
+#         )).geom AS geometry, 
+#         (ST_PixelAsPolygons(
+#             ST_Clip(oes_cgiar.rast, query_geom.geom, -32768),
+#             1, False
+#         )).val AS height  
+#     FROM query_geom 
+#     JOIN oes_cgiar 
+#     ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
+# )
+# SELECT 
+#     ST_AsText(geometry) AS wkt,
+#     height
+# FROM pixels
+# WHERE height != -32768;
 
+#     """
+# )
+#End-OLD-Original
+
+#opcion1
+# PIXEL_POLYGONS_WITH_HEIGHT_QUERY = text(
+#     """
+#     WITH query_geom AS (
+#         SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
+#     ),
+#     pixels AS (
+#         SELECT 
+#             p.geom AS geometry, 
+#             p.val AS height  
+#         FROM query_geom 
+#         JOIN oes_cgiar ON ST_Intersects(oes_cgiar.rast, query_geom.geom),
+#         LATERAL ST_PixelAsPolygons(
+#             ST_Clip(oes_cgiar.rast, query_geom.geom, -32768),
+#             1, False
+#         ) AS p
+#     )
+#     SELECT 
+#         ST_AsText(geometry) AS wkt,
+#         height
+#     FROM pixels
+#     WHERE height != -32768;
+#     """
+# )
+#End-opcion1
+
+#opcion2
 PIXEL_POLYGONS_WITH_HEIGHT_QUERY = text(
     """
     WITH query_geom AS (
-    SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
-),
-pixels AS (
+        SELECT ST_SetSRID(ST_GeomFromText(:polygon), 4326) AS geom
+    ),
+    clipped_rasters AS (
+        SELECT ST_Clip(oes_cgiar.rast, q.geom, -32768) AS rast
+        FROM query_geom q
+        JOIN oes_cgiar ON ST_Intersects(oes_cgiar.rast, q.geom)
+    ),
+    pixels AS (
+        SELECT 
+            p.geom AS geometry, 
+            p.val AS height
+        FROM clipped_rasters,
+        LATERAL ST_PixelAsPolygons(rast, 1, False) AS p
+        WHERE p.val != -32768
+    )
     SELECT 
-        (ST_PixelAsPolygons(
-            ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-            1, False
-        )).geom AS geometry, 
-        (ST_PixelAsPolygons(
-            ST_Clip(oes_cgiar.rast, query_geom.geom, 0),
-            1, False
-        )).val AS height  
-    FROM query_geom 
-    JOIN oes_cgiar 
-    ON ST_Intersects(oes_cgiar.rast, query_geom.geom)
-)
-SELECT 
-    ST_AsText(geometry) AS wkt,
-    height
-FROM pixels
-WHERE height != 0;
-
+        ST_AsText(geometry) AS wkt,
+        height
+    FROM pixels;
     """
 )
+#End-opcion2
 
 def group_and_union_geometries(geometries_by_height, min_height, max_height, num_ranges):
     """
