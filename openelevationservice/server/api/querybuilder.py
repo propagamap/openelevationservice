@@ -9,12 +9,12 @@ from openelevationservice.server.api.api_exceptions import InvalidUsage
 
 from geoalchemy2.functions import ST_Value, ST_Intersects, ST_X, ST_Y # ST_DumpPoints, ST_Dump, 
 from sqlalchemy import func, literal_column, case, text
-from sqlalchemy.types import JSON
+
 from sqlalchemy.dialects.postgresql import array
 
-from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation, group_tiles_by_height_parallel
+from openelevationservice.server.api.elevation_query_area_union import PIXEL_POLYGONS_WITH_HEIGHT_QUERY, group_and_union_geometries
 
-
+from shapely import wkt
 
 log = get_logger(__name__)
 
@@ -53,60 +53,53 @@ def format_PixelAsGeoms(result_pixels):
            func.unnest(literal_column("ARRAY{}".format(heights)))
 
 
-def polygon_coloring_elevation_parallel(geometry):
+def polygon_union_by_elevation(geometry):
     """
-    Processes elevation data in parallel for a polygon geometry and returns a JSON.
+    Processes elevation data for a polygon geometry and returns grouped/unioned geometries.
 
-    :param geometry: Input 2D polygon geometry to process.
-    :type geometry: Shapely geometry
-
-    :raises InvalidUsage: If the geometry processing or query fails.
-
-    :returns: A tuple containing:
-              - Feature collection (JSON) enriched with elevation data.
-              - List with minimum and maximum elevation.
-              - Average elevation in the polygon.
-    :rtype: tuple(dict, list[float], float)
+    :param geometry: Input 2D polygon geometry (Shapely).
+    :returns: A tuple of:
+              - Feature collection dict (GeoJSON-like with unioned polygons),
+              - [min, max] elevation range,
+              - average elevation
     """
+
+    num_ranges = 23
 
     if geometry.geom_type != 'Polygon':
         raise InvalidUsage(400, 4002, f"Needs to be a Polygon, not a {geometry.geom_type}!")
 
-    polygon = str(geometry)  
+    polygon_wkt = str(geometry)
     session = db.get_session()
 
     try:
         
-        result = session.execute(POLYGON_COLORING_ELEVATION_QUERY, {"polygon": polygon})
-        row = result.fetchone()
+        result = session.execute(PIXEL_POLYGONS_WITH_HEIGHT_QUERY, {"polygon": polygon_wkt})
+        rows = result.fetchall()
 
-        if not row:
+        if not rows:
             raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
 
-        features_collection, min_height, max_height, avg_height = row
+        geometries_by_height = [(wkt.loads(wkt_str), height) for wkt_str, height in rows]
+        heights = [h for _, h in geometries_by_height]
 
-        features_collection = classify_elevation(
-            features_collection,
+        min_height = min(heights)
+        max_height = max(heights)
+        avg_height = sum(heights) / len(heights)
+
+        features_collection = group_and_union_geometries(
+            geometries_by_height,
             min_height,
             max_height,
-            num_ranges=23,
-            no_data_value=-9999
+            num_ranges
         )
 
-        features_collection = group_tiles_by_height_parallel(
-            features_collection,
-            num_processes=4,
-            chunk_size=5
-        )
+        return features_collection, [min_height, max_height], avg_height
 
     except InvalidUsage as exc:
-        
         raise exc
     except Exception as e:
-        
-        raise InvalidUsage(500, 4003, f"An error occurred while processing the geometry: {str(e)}")
-
-    return features_collection, [min_height, max_height], avg_height
+        raise InvalidUsage(500, 4003, f"Error processing geometry: {str(e)}")
 
 
 def polygon_elevation_sql(geometry, dataset):
@@ -129,7 +122,7 @@ def polygon_elevation_sql(geometry, dataset):
 
         session = db.get_session()
 
-        POLYGON_ELEVATION_QUERY   = """
+        POLYGON_ELEVATION_QUERY = """
             WITH polygon_geom AS (
             SELECT ST_SetSRID(
                     ST_GeomFromText(:wkt_polygon), 4326
