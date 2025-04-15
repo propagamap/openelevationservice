@@ -101,14 +101,36 @@ def polygon_union_by_elevation(geometry):
         if not rows:
             raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
 
-        print(type(rows))
+        #print(type(rows))
         #print("rows", rows)
-        print("")
+        #print("")
 
         start_time=time.time()
 
+        #opcion1
         geometries_by_height = [(wkt.loads(wkt_str), height) for wkt_str, height in rows]
         heights = [h for _, h in geometries_by_height]
+        #opcion2
+        # n = len(rows)  # Asumimos que rows ya está en memoria
+        # geometries_by_height = [None] * n  # Preasignación
+        # heights = [None] * n  # Preasignación
+
+        # for i, (wkt_str, height) in enumerate(rows):
+        #     geometries_by_height[i] = (wkt.loads(wkt_str), height)  # Asignación directa
+        #     heights[i] = height  # Asignación directa
+
+        #opcion3 = format_PixelAsGeoms(rows)
+        # n = len(rows)
+        # geometries_by_height = [None] * n  # Preasignación
+        # heights = [None] * n
+
+        # for i, (wkt_str, height) in enumerate(rows):
+        #     geometries_by_height[i] = (wkt.loads(wkt_str), height)
+        #     heights[i] = height
+
+
+
+
 
         #print(type(geometries_by_height))
         #print("geometries_by_height", geometries_by_height)
