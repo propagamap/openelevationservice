@@ -1,5 +1,6 @@
 from concurrent import futures
 import time
+from openelevationservice.server.utils.logger import get_logger
 from sqlalchemy.exc import SQLAlchemyError
 from openelevationservice.server.api import querybuilder, views
 from openelevationservice.server.api.api_exceptions import InvalidUsage
@@ -10,6 +11,7 @@ from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
 
+log = get_logger(__name__)
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
@@ -128,7 +130,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
         end = time.perf_counter()
         elapsed = end - start
-        print(f"Tiempo transcurrido: {elapsed:.9f} segundos")
+        log.info(f"Tiempo de ejecución: {elapsed:.9f} segundos")
 
         return defs.AreaRangesResponse(
             unions=result,
