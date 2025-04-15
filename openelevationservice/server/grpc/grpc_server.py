@@ -142,19 +142,6 @@ def grpc_serve(port_url):
 
     reflection.enable_server_reflection(SERVICE_NAMES, server)
     
-    # TODO: use correct credentials if needed
-    # if '-s' in sys.argv[1:]:
-    #     privkey = open('./test_ssl/test_key.pem', 'rb').read()
-    #     certchain = open('./test_ssl/test_cert.pem', 'rb').read()
-    #     server.add_secure_port(
-    #         port_url,
-    #         grpc.ssl_server_credentials(
-    #             ((privkey, certchain), ),
-    #             # root_certificates=None,
-    #             # require_client_auth=False
-    #         )
-    #     )
-    # else:
     server.add_insecure_port(port_url)
 
     server.start()
