@@ -10,6 +10,9 @@ from grpc_reflection.v1alpha import reflection
 from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
+from openelevationservice.server.utils.logger import get_logger
+
+log = get_logger(__name__)
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
@@ -100,10 +103,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     @handle_exceptions
     def AreaRangesElevation(self, request, context):
         
-        logical_cpus = os.cpu_count()
-        print("logical_cpus: ", logical_cpus)
-        
-        start_time=time.time()
+        start = time.perf_counter()
         
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation(geom, 'srtm')
@@ -123,9 +123,9 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
                         area=self._create_proto_geo_polygon(polygon),
                     ))
                     
-        end_time=time.time()
-        duration=end_time-start_time
-        print(f"Execution time: {duration:.4f}")
+        end = time.perf_counter()
+        elapsed = end - start
+        log.info(f"Tiempo de ejecución: {elapsed:.9f} segundos")
         
         return defs.AreaRangesResponse(
             unions=result,
