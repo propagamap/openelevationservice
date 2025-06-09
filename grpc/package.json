@@ -12,12 +12,15 @@
   "license": "MIT",
   "scripts": {
     "__protoc": "grpc_tools_node_protoc",
-    "build": "node protoc_web.js ./proto/openelevationservice/server/grpc ./node_dist"
+    "generate-web": "node protoc_node.js ./node_dist ./proto/openelevationservice/server/grpc  --web",
+    "generate": "node protoc_node.js ./node_dist ./proto/openelevationservice/server/grpc",
+    "build": "npm run generate-web && tsc",
+    "execute": "node ./dist/index.js",
+    "start": "tsc && node ./dist/index.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.9.15",
-    "google-protobuf": "^3.21.4",
-    "grpc-web": "^1.5.0"
+    "protoc-gen-grpc-web": "^1.5.0"
   },
   "devDependencies": {
     "grpc-tools": "^1.12.4",
