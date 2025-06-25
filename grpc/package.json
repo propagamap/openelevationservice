@@ -19,8 +19,7 @@
     "start": "tsc && node ./dist/index.js"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.9.15",
-    "protoc-gen-grpc-web": "^1.5.0"
+    "@grpc/grpc-js": "^1.9.15"
   },
   "devDependencies": {
     "grpc-tools": "^1.12.4",
