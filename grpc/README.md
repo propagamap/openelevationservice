@@ -39,7 +39,7 @@ For Node.js Clients
   
 - This will allow you to generate types using @propagamap/oes-grpc-ts as the package name.
 
--[Edit package.json](./grpc/package.json) 
+-[Edit package.json](../grpc/package.json) 
 
 
 Run the following commands in this **grpc** folder.
