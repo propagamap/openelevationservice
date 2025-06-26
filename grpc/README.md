@@ -48,3 +48,40 @@ yarn version --patch
 
 npm publish
 ```
+
+## Generate gRPC Type Definitions
+
+Run the following commands in the grpc folder of this repository (/grpc):
+
+1. Generate gRPC types
+
+    1.1 For gRPC-Web Clients
+   
+      - Generates types using @propagamap/oes-grpc-web as package name:
+
+      - Use the command: ```npm run generate-web```
+
+    1.2 For Node.js Clients
+   
+      - Edit grpc/package.json and change:
+        
+            diff
+            - "name": "@propagamap/oes-grpc-web"
+            + "name": "@propagamap/oes-grpc-ts"  # (or your custom name)
+        
+  
+       - The name of your Node.js package should remain as 
+
+        ```@propagamap/oes-grpc-ts```
+  
+      - Use the command: ```npm run generate```
+        
+2. Build Project
+
+    2.1 Web Version
+
+       - Use the command: ```npm run build-web```
+
+    2.2 Node.js Version
+
+       - Use the command: ```npm run build```

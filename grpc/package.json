@@ -14,7 +14,8 @@
     "__protoc": "grpc_tools_node_protoc",
     "generate-web": "node protoc_node.js ./node_dist ./proto/openelevationservice/server/grpc  --web",
     "generate": "node protoc_node.js ./node_dist ./proto/openelevationservice/server/grpc",
-    "build": "npm run generate-web && tsc",
+    "build-web": "npm run generate-web && tsc",
+    "build": "npm run generate && tsc",
     "execute": "node ./dist/index.js",
     "start": "tsc && node ./dist/index.js"
   },

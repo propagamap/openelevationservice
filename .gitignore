@@ -26,4 +26,3 @@ build/
 grpc/node_modules/
 grpc/node_dist/
 grpc/.npmrc
-grpc/.npmignore
