@@ -3,7 +3,7 @@ const path = require('path');
 const childProcess  = require('child_process');
 
 if (process.argv.length < 4) {
-    console.error('Usage: node protoc_node.js <proto_path> <output_path>');
+    console.error('Usage: node protoc_node.js <output_path> <proto_path>');
     process.exit(1);
 }
 
