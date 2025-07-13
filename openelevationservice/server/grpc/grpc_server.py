@@ -10,6 +10,7 @@ from grpc_reflection.v1alpha import reflection
 from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
+from openelevationservice.server.utils.logger import get_logger
 
 log = get_logger(__name__)
 
@@ -130,7 +131,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
 
         end = time.perf_counter()
         elapsed = end - start
-        log.info(f"Tiempo de ejecución: {elapsed:.9f} segundos")
+        log.info(f"Execution time: {elapsed:.9f} seconds")
 
         return defs.AreaRangesResponse(
             unions=result,
