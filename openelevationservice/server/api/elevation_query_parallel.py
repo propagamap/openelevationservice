@@ -5,6 +5,7 @@ from shapely.ops import unary_union
 from multiprocessing import Pool
 import math
 
+from openelevationservice.server.api.api_exceptions import check_grpc_context
 
 POLYGON_COLORING_ELEVATION_QUERY = text(
     """
@@ -48,7 +49,7 @@ FROM polygons;
 )
 
 
-def classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999):
+def classify_elevation(features_collection, min_height, max_height, num_ranges=23, no_data_value=-9999, grpc_context=None):
     """
     Categorizes elevation values into discrete ranges and assigns color bands.
 
@@ -67,9 +68,13 @@ def classify_elevation(features_collection, min_height, max_height, num_ranges=2
     :param no_data_value: Value assigned to pixels with missing data (default: -9999).
     :type no_data_value: int
 
+    :param grpc_context: Optional gRPC context to check for request cancellation.
+    :type grpc_context: grpc.ServicerContext or None
+
     :returns: A feature collection with categorized elevation values.
     :rtype: dict
-    """
+    """    
+    check_grpc_context(grpc_context)
 
     range_div = (max_height - min_height + 1) / num_ranges
 
@@ -79,6 +84,7 @@ def classify_elevation(features_collection, min_height, max_height, num_ranges=2
     }
 
     for feature in features_collection['features']:
+        check_grpc_context(grpc_context)
         
         height = feature['properties']['heightBase']
         
@@ -138,7 +144,7 @@ def process_union(input_data):
     return new_features
 
 
-def group_tiles_by_height_parallel(data, num_processes=4, chunk_size=5):
+def group_tiles_by_height_parallel(data, num_processes=4, chunk_size=5, grpc_context=None):
     """
     Groups tiles by elevation value and merges them in parallel for improved performance.
 
@@ -151,13 +157,21 @@ def group_tiles_by_height_parallel(data, num_processes=4, chunk_size=5):
     :param chunk_size: Number of elements per processing chunk (default: 5).
     :type chunk_size: int
 
+    :param grpc_context: Optional gRPC context to check for request cancellation.
+    :type grpc_context: grpc.ServicerContext or None
+
     :returns: A feature collection with merged polygons grouped by elevation.
     :rtype: dict
     """
+    from openelevationservice.server.api.api_exceptions import check_grpc_context
+    
+    check_grpc_context(grpc_context)
     
     groupings = {}
     
     for feature in data["features"]:
+        check_grpc_context(grpc_context)
+            
         height = feature["properties"]["heightBase"]
         geometry = json.loads(feature["geometry"])  
         polygon = shape(geometry)
@@ -166,6 +180,8 @@ def group_tiles_by_height_parallel(data, num_processes=4, chunk_size=5):
             groupings[height] = []
         
         groupings[height].append(polygon)
+    
+    check_grpc_context(grpc_context)
     
     entries = [(height, polygons) for height, polygons in groupings.items()]
     

@@ -1,17 +1,14 @@
 from concurrent import futures
+import time
 from sqlalchemy.exc import SQLAlchemyError
 from openelevationservice.server.api import querybuilder, views
-from openelevationservice.server.api.api_exceptions import InvalidUsage
+from openelevationservice.server.api.api_exceptions import InvalidUsage, check_grpc_context
 from openelevationservice.server.utils import convert
 import grpc
 from grpc_reflection.v1alpha import reflection
 from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from shapely import wkt
-import time
-import os 
-
-
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
@@ -35,7 +32,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     @handle_exceptions
     def PointElevation(self, request, context):
         geom = convert.point_to_geometry([request.lon, request.lat])
-        geom_queried = querybuilder.point_elevation(geom, 'point', 'srtm')
+        geom_queried = querybuilder.point_elevation(geom, 'point', 'srtm', context)
+        check_grpc_context(context)
         geom_shaped = wkt.loads(geom_queried)
         point_3d = list(geom_shaped.coords[0])
         elevation = int(point_3d[2])
@@ -47,11 +45,14 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
             [request.start.lon, request.start.lat],
             [request.end.lon, request.end.lat]
         ])
-        geom_queried = querybuilder.line_elevation(geom, 'polyline', 'srtm')
+        geom_queried = querybuilder.line_elevation(geom, 'polyline', 'srtm', context)
+        check_grpc_context(context)
         geom_shaped = wkt.loads(views.zero_len_line_format(geom_queried))
         
         result = []
         for point in list(geom_shaped.coords):
+            check_grpc_context(context)
+                
             result.append(defs.LatLonElevation(
                 lon=point[0],
                 lat=point[1],
@@ -77,10 +78,13 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     @handle_exceptions
     def AreaPointsElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
-        geom_queried = querybuilder.polygon_elevation_sql(geom, 'srtm')
-        
+        geom_queried = querybuilder.polygon_elevation_sql(geom, 'srtm', context)
+        check_grpc_context(context)
+
         result = []
         for point in list(geom_queried):
+            check_grpc_context(context)
+                
             result.append(defs.LatLonElevation(
                 lon=point[0],
                 lat=point[1],
@@ -102,20 +106,17 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
    
 
     @handle_exceptions
-    def AreaRangesElevation(self, request, context):
-               
-        logical_cpus = os.cpu_count()
-        print("logical_cpus: ", logical_cpus)
-        
-
+    def AreaRangesElevation(self, request, context):      
         start_time=time.time()
 
-        geom = convert.polygon_to_geometry(self._format_area_request(request))     
-
-        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_parallel(geom)
+        geom = convert.polygon_to_geometry(self._format_area_request(request))
+        collection_queried, range_queried, avg_queried = querybuilder.polygon_coloring_elevation_parallel(geom, context)
+        check_grpc_context(context)
         
         result = []
         for feature in collection_queried['features']:
+            check_grpc_context(context)
+                
             geometry = feature['geometry']  
             heightBase = int(feature['properties']['heightBase'])
             

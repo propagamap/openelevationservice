@@ -2,14 +2,11 @@
 
 from openelevationservice import SETTINGS
 from openelevationservice.server.utils.logger import get_logger
-#from openelevationservice.server.db_import.models import db, Cgiar
 from openelevationservice.server.grpc.db_grpc import db, Cgiar
-# from openelevationservice.server.utils.custom_func import ST_SnapToGrid
-from openelevationservice.server.api.api_exceptions import InvalidUsage
+from openelevationservice.server.api.api_exceptions import InvalidUsage, check_grpc_context
 
 from geoalchemy2.functions import ST_Value, ST_Intersects, ST_X, ST_Y # ST_DumpPoints, ST_Dump, 
-from sqlalchemy import func, literal_column, case, text
-from sqlalchemy.types import JSON
+from sqlalchemy import func, literal_column, text
 from sqlalchemy.dialects.postgresql import array
 
 from openelevationservice.server.api.elevation_query_parallel import POLYGON_COLORING_ELEVATION_QUERY, classify_elevation, group_tiles_by_height_parallel
@@ -53,12 +50,15 @@ def format_PixelAsGeoms(result_pixels):
            func.unnest(literal_column("ARRAY{}".format(heights)))
 
 
-def polygon_coloring_elevation_parallel(geometry):
+def polygon_coloring_elevation_parallel(geometry, grpc_context=None):
     """
     Processes elevation data in parallel for a polygon geometry and returns a JSON.
 
     :param geometry: Input 2D polygon geometry to process.
     :type geometry: Shapely geometry
+    
+    :param grpc_context: Optional gRPC context to check for request cancellation.
+    :type grpc_context: grpc.ServicerContext or None
 
     :raises InvalidUsage: If the geometry processing or query fails.
 
@@ -72,6 +72,8 @@ def polygon_coloring_elevation_parallel(geometry):
     if geometry.geom_type != 'Polygon':
         raise InvalidUsage(400, 4002, f"Needs to be a Polygon, not a {geometry.geom_type}!")
 
+    check_grpc_context(grpc_context)
+
     polygon = str(geometry)  
     session = db.get_session()
 
@@ -83,6 +85,8 @@ def polygon_coloring_elevation_parallel(geometry):
         if not row:
             raise InvalidUsage(404, 4002, "No elevation data was returned for the specified geometry.")
 
+        check_grpc_context(grpc_context)
+
         features_collection, min_height, max_height, avg_height = row
 
         features_collection = classify_elevation(
@@ -90,13 +94,17 @@ def polygon_coloring_elevation_parallel(geometry):
             min_height,
             max_height,
             num_ranges=23,
-            no_data_value=-9999
+            no_data_value=-9999,
+            grpc_context=grpc_context
         )
+
+        check_grpc_context(grpc_context)
 
         features_collection = group_tiles_by_height_parallel(
             features_collection,
             num_processes=4,
-            chunk_size=5
+            chunk_size=5,
+            grpc_context=grpc_context
         )
 
     except InvalidUsage as exc:
@@ -109,7 +117,7 @@ def polygon_coloring_elevation_parallel(geometry):
     return features_collection, [min_height, max_height], avg_height
 
 
-def polygon_elevation_sql(geometry, dataset):
+def polygon_elevation_sql(geometry, dataset, grpc_context=None):
     """
     Performs PostGIS query to enrich a polygon geometry.
     
@@ -119,6 +127,9 @@ def polygon_elevation_sql(geometry, dataset):
     :param dataset: Elevation dataset to use for querying
     :type dataset: string
     
+    :param grpc_context: Optional gRPC context to check for request cancellation.
+    :type grpc_context: grpc.ServicerContext or None
+    
     :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
         
     :returns: List of tuples containing (longitude, latitude, elevation).
@@ -126,6 +137,8 @@ def polygon_elevation_sql(geometry, dataset):
     """
     
     if geometry.geom_type == 'Polygon':
+
+        check_grpc_context(grpc_context)
 
         session = db.get_session()
 
@@ -161,6 +174,8 @@ def polygon_elevation_sql(geometry, dataset):
         """
 
         result_points = session.execute(text(POLYGON_ELEVATION_QUERY), {"wkt_polygon": geometry.wkt}).fetchall()
+        
+        check_grpc_context(grpc_context)
             
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Polygon, not a {}!".format(geometry.geom_type))
@@ -171,7 +186,7 @@ def polygon_elevation_sql(geometry, dataset):
         
     return result_points
 
-def line_elevation(geometry, format_out, dataset):
+def line_elevation(geometry, format_out, dataset, grpc_context=None):
     """
     Performs PostGIS query to enrich a line geometry.
     
@@ -185,11 +200,16 @@ def line_elevation(geometry, format_out, dataset):
     :param dataset: Elevation dataset to use for querying
     :type dataset: string
     
+    :param grpc_context: Optional gRPC context to check for request cancellation.
+    :type grpc_context: grpc.ServicerContext or None
+    
     :raises InvalidUsage: internal HTTP 500 error with more detailed description. 
         
     :returns: 3D line as GeoJSON or WKT
     :rtype: string
     """
+    
+    check_grpc_context(grpc_context)
     
     Model = _getModel(dataset)
     
@@ -238,6 +258,7 @@ def line_elevation(geometry, format_out, dataset):
                             )) \
                             .subquery().alias('points3d')
                             
+        check_grpc_context(grpc_context)
 
         if format_out == 'geojson':
             # Return GeoJSON directly in PostGIS
@@ -252,6 +273,8 @@ def line_elevation(geometry, format_out, dataset):
         raise InvalidUsage(400, 4002, "Needs to be a LineString, not a {}!".format(geometry.geom_type))
 
     result_geom = query_final.scalar()
+    
+    check_grpc_context(grpc_context)
 
     # Behaviour when all vertices are out of bounds
     if result_geom == None:
@@ -261,7 +284,7 @@ def line_elevation(geometry, format_out, dataset):
     return result_geom
 
 
-def point_elevation(geometry, format_out, dataset):
+def point_elevation(geometry, format_out, dataset, grpc_context=None):
     """
     Performs PostGIS query to enrich a point geometry.
     
@@ -274,11 +297,16 @@ def point_elevation(geometry, format_out, dataset):
     :param dataset: Elevation dataset to use for querying
     :type dataset: string
     
+    :param grpc_context: Optional gRPC context to check for request cancellation.
+    :type grpc_context: grpc.ServicerContext or None
+    
     :raises InvalidUsage: internal HTTP 500 error with more detailed description.
     
     :returns: 3D Point as GeoJSON or WKT
     :rtype: string
     """
+    
+    check_grpc_context(grpc_context)
     
     Model = _getModel(dataset)
     
@@ -296,6 +324,8 @@ def point_elevation(geometry, format_out, dataset):
                             .limit(1) \
                             .subquery().alias('getelevation')
         
+        check_grpc_context(grpc_context)
+        
         if format_out == 'geojson': 
             query_final = db.get_session() \
                                 .query(func.ST_AsGeoJSON(func.ST_MakePoint(ST_X(query_getelev.c.geom),
@@ -312,6 +342,8 @@ def point_elevation(geometry, format_out, dataset):
         raise InvalidUsage(400, 4002, "Needs to be a Point, not {}!".format(geometry.geom_type))
     
     result_geom = query_final.scalar()
+    
+    check_grpc_context(grpc_context)
 
     if result_geom == None:
         raise InvalidUsage(404, 4002,
