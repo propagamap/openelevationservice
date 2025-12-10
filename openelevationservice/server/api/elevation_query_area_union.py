@@ -4,6 +4,8 @@ import math
 from collections import defaultdict
 from shapely import unary_union
 
+from openelevationservice.server.grpc.cancelling import grpc_check
+
 PIXEL_POLYGONS_WITH_HEIGHT_QUERY = text(
     """
     WITH query_geom AS (
@@ -54,6 +56,7 @@ def group_and_union_geometries(geometries_by_height, min_height, max_height, num
         if not geoms:
             continue
 
+        grpc_check()
         unioned = unary_union(geoms)
 
         if unioned.geom_type == 'MultiPolygon':
