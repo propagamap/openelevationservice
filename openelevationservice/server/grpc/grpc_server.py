@@ -11,7 +11,6 @@ from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
 from .cancelling import RequestCancelledException, grpc_check, grpc_end, grpc_start
 from shapely import wkt
-from openelevationservice.server.utils.logger import get_logger
 
 log = get_logger(__name__)
 
@@ -24,7 +23,7 @@ def handle_exceptions(func):
             context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
         except RequestCancelledException:
             log.info("Request cancelled by the client.")
-            context.abort(grpc.StatusCode.CANCELLED, "Cancelled on client.")
+            context.abort(grpc.StatusCode.CANCELLED, "Cancelled by client.")
         except SQLAlchemyError as error:
             context.abort(grpc.StatusCode.INTERNAL, 'Could not connect to database.')
         except Exception as error:
