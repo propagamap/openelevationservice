@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python Debug",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "run_grpc_server.py",
+      "console": "integratedTerminal",
+      "env": {
+        "OES_HOST": "192.168.68.202"
+      }
+    }
+  ]
+}

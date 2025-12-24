@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from openelevationservice import SETTINGS
+from openelevationservice.server.grpc.cancel_requests import RequestCancelledException, grpc_check
 from openelevationservice.server.utils.logger import get_logger
 #from openelevationservice.server.db_import.models import db, Cgiar
 from openelevationservice.server.grpc.db_grpc import db, Cgiar
@@ -75,6 +76,7 @@ def polygon_union_by_elevation(geometry):
     try:
         
         result = session.execute(PIXEL_POLYGONS_WITH_HEIGHT_QUERY, {"polygon": polygon_wkt})
+        grpc_check()
         rows = result.fetchall()
 
         if not rows:
@@ -87,6 +89,7 @@ def polygon_union_by_elevation(geometry):
         max_height = max(heights)
         avg_height = sum(heights) / len(heights)
 
+        grpc_check()
         features_collection = group_and_union_geometries(
             geometries_by_height,
             min_height,
@@ -96,8 +99,8 @@ def polygon_union_by_elevation(geometry):
 
         return features_collection, [min_height, max_height], avg_height
 
-    except InvalidUsage as exc:
-        raise exc
+    except (InvalidUsage, RequestCancelledException):
+        raise
     except Exception as e:
         raise InvalidUsage(500, 4003, f"Error processing geometry: {str(e)}")
 
@@ -152,7 +155,7 @@ def polygon_elevation_sql(geometry, dataset):
             ORDER BY ST_X(pg.pixel_geom), ST_Y(pg.pixel_geom);
 
         """
-
+        grpc_check()
         result_points = session.execute(text(POLYGON_ELEVATION_QUERY), {"wkt_polygon": geometry.wkt}).fetchall()
             
     else:
@@ -244,6 +247,7 @@ def line_elevation(geometry, format_out, dataset):
     else:
         raise InvalidUsage(400, 4002, "Needs to be a LineString, not a {}!".format(geometry.geom_type))
 
+    grpc_check()
     result_geom = query_final.scalar()
 
     # Behaviour when all vertices are out of bounds
@@ -303,7 +307,8 @@ def point_elevation(geometry, format_out, dataset):
                                                                     )))
     else:
         raise InvalidUsage(400, 4002, "Needs to be a Point, not {}!".format(geometry.geom_type))
-    
+
+    grpc_check()
     result_geom = query_final.scalar()
 
     if result_geom == None:

@@ -9,22 +9,29 @@ import grpc
 from grpc_reflection.v1alpha import reflection
 from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
+from .cancel_requests import RequestCancelledException, grpc_check, grpc_end, grpc_start
 from shapely import wkt
-from openelevationservice.server.utils.logger import get_logger
 
 log = get_logger(__name__)
 
 def handle_exceptions(func):
     def wrapper(self, request, context):
         try:
+            grpc_start(context)
             return func(self, request, context)
         except InvalidUsage as error:
             context.abort(grpc.StatusCode.INTERNAL, error.to_dict().get('message'))
+        except RequestCancelledException:
+            log.info("Request cancelled by the client.")
+            context.abort(grpc.StatusCode.CANCELLED, "Cancelled by client.")
         except SQLAlchemyError as error:
             context.abort(grpc.StatusCode.INTERNAL, 'Could not connect to database.')
         except Exception as error:
             print(error)
             context.abort(grpc.StatusCode.INTERNAL, 'An unexpected error occurred.')
+        finally:
+            grpc_end()
+
     return wrapper
 
 class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
@@ -50,7 +57,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         ])
         geom_queried = querybuilder.line_elevation(geom, 'polyline', 'srtm')
         geom_shaped = wkt.loads(views.zero_len_line_format(geom_queried))
-        
+        grpc_check()
+
         result = []
         for point in list(geom_shaped.coords):
             result.append(defs.LatLonElevation(
@@ -79,7 +87,8 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
     def AreaPointsElevation(self, request, context):
         geom = convert.polygon_to_geometry(self._format_area_request(request))
         geom_queried = querybuilder.polygon_elevation_sql(geom, 'srtm')
-        
+        grpc_check()
+
         result = []
         for point in list(geom_queried):
             result.append(defs.LatLonElevation(
@@ -110,6 +119,7 @@ class OpenElevationServicer(openelevation_pb2_grpc.OpenElevationServicer):
         geom = convert.polygon_to_geometry(self._format_area_request(request))     
        
         collection_queried, range_queried, avg_queried = querybuilder.polygon_union_by_elevation(geom)
+        grpc_check()
         
         result = []
         for feature in collection_queried['features']:
