@@ -9,7 +9,7 @@ import grpc
 from grpc_reflection.v1alpha import reflection
 from . import openelevation_pb2 as defs
 from . import openelevation_pb2_grpc
-from .cancelling import RequestCancelledException, grpc_check, grpc_end, grpc_start
+from .cancel_requests import RequestCancelledException, grpc_check, grpc_end, grpc_start
 from shapely import wkt
 
 log = get_logger(__name__)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from openelevationservice import SETTINGS
-from openelevationservice.server.grpc.cancelling import RequestCancelledException, grpc_check
+from openelevationservice.server.grpc.cancel_requests import RequestCancelledException, grpc_check
 from openelevationservice.server.utils.logger import get_logger
 #from openelevationservice.server.db_import.models import db, Cgiar
 from openelevationservice.server.grpc.db_grpc import db, Cgiar

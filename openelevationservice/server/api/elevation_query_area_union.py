@@ -4,7 +4,7 @@ import math
 from collections import defaultdict
 from shapely import unary_union
 
-from openelevationservice.server.grpc.cancelling import grpc_check
+from openelevationservice.server.grpc.cancel_requests import grpc_check
 
 PIXEL_POLYGONS_WITH_HEIGHT_QUERY = text(
     """
